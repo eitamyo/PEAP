@@ -1648,10 +1648,10 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
             "[A]", io_token).replace("[B]", s_token)
         tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
-        io_index = tokens_list.index(" " + io_token)
-        s1_index = tokens_list.index(" " + s_token)
+        io_index = tokens_list.index(io_token)
+        s1_index = tokens_list.index(s_token)
         s2_index = tokens_list[s1_index +
-                               1:].index(" " + s_token) + s1_index + 1
+                               1:].index(s_token) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -1663,12 +1663,12 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["action2"].append(s2_index + 1)
         dataset_clean["to"].append(len(tokens_list) - 1)
         dataset_clean["length"].append(len(tokens_list))
-        dataset_clean["wrong_token"].append(" " + s_token)
-        dataset_clean["correct_token"].append(" " + io_token)
-        dataset_clean["S1_token"].append(" " + s_token)
-        dataset_clean["S2_token"].append(" " + s_token)
-        dataset_clean["IO_token"].append(" " + io_token)
-        dataset_clean["label"].append(" " + io_token)
+        dataset_clean["wrong_token"].append(s_token)
+        dataset_clean["correct_token"].append(io_token)
+        dataset_clean["S1_token"].append(s_token)
+        dataset_clean["S2_token"].append(s_token)
+        dataset_clean["IO_token"].append(io_token)
+        dataset_clean["label"].append(io_token)
         dataset_clean["split"].append(types[i])
 
         abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
@@ -1685,12 +1685,12 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["action2"].append(s2_index + 1)
         dataset_counter_abc["to"].append(len(tokens_list) - 1)
         dataset_counter_abc["length"].append(len(tokens_list))
-        dataset_counter_abc["wrong_token"].append(" " + s_token)
-        dataset_counter_abc["correct_token"].append(" " + io_token)
-        dataset_counter_abc["S1_token"].append(" " + s_token)
-        dataset_counter_abc["S2_token"].append(" " + s_token)
-        dataset_counter_abc["IO_token"].append(" " + io_token)
-        dataset_counter_abc["label"].append(" " + io_token)
+        dataset_counter_abc["wrong_token"].append(s_token)
+        dataset_counter_abc["correct_token"].append(io_token)
+        dataset_counter_abc["S1_token"].append(s_token)
+        dataset_counter_abc["S2_token"].append(s_token)
+        dataset_counter_abc["IO_token"].append(io_token)
+        dataset_counter_abc["label"].append(io_token)
         dataset_counter_abc["split"].append(types[i])
 
     dataset_clean = pd.DataFrame.from_dict(dataset_clean)
