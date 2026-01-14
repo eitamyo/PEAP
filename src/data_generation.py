@@ -1607,7 +1607,7 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         center_writing_weights=False,
         center_unembed=False,
         trust_remote_code=True,
-        default_prepend_bos=True,
+        # default_prepend_bos=True,
         fold_ln=False,
         device="cuda",
         dtype=dtype
@@ -1655,16 +1655,23 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
 
         abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
             "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+        tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
+        a_tokens = model.to_str_tokens(a_token)
+        b_tokens = model.to_str_tokens(b_token)
+        c_tokens = model.to_str_tokens(c_token)
+        a_index = tokens_list.index(a_tokens[0])
+        b_index = tokens_list.index(b_tokens[0])
+        c_index = tokens_list.index(c_tokens[0])
 
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
         dataset_counter_abc["prefix"].append(1)
-        dataset_counter_abc["IO"].append(io_index)
-        dataset_counter_abc["connector"].append(io_index + len(io_tokens))
-        dataset_counter_abc["S1"].append(s1_index)
-        dataset_counter_abc["action1"].append(s1_index + len(s_tokens))
-        dataset_counter_abc["S2"].append(s2_index)
-        dataset_counter_abc["action2"].append(s2_index + len(s_tokens))
+        dataset_counter_abc["IO"].append(a_index)
+        dataset_counter_abc["connector"].append(a_index + len(a_tokens))
+        dataset_counter_abc["S1"].append(b_index)
+        dataset_counter_abc["action1"].append(b_index + len(b_tokens))
+        dataset_counter_abc["S2"].append(c_index)
+        dataset_counter_abc["action2"].append(c_index + len(c_tokens))
         dataset_counter_abc["length"].append(len(tokens_list))
         dataset_counter_abc["wrong_token"].append(s_tokens[0])
         dataset_counter_abc["correct_token"].append(io_tokens[0])
