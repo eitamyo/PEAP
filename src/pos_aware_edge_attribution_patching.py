@@ -205,10 +205,12 @@ class EAPResults:
         return getattr(self, key)
 
     def update_score(self, edge: Edge, scores: Dict[str, torch.Tensor]):
+        if isinstance(scores["avg"], list):
+            raise ValueError("Scores should be numpy arrays, not lists")
         if edge not in self.results:
             self.results[edge] = EdgeScore(avg_score=scores["avg"], sum_score=scores["sum"], sum_abs_pos_score=scores["sum_abs_pos"], sum_abs_exp_score=scores["sum_abs_exp"], max_abs_score=scores["max_abs"])
         else:
-            self.results[edge].avg_score.append(scores["avg"])  
+            self.results[edge].avg_score.append(scores["avg"])
             self.results[edge].sum_score.append(scores["sum"])
             self.results[edge].sum_abs_pos_score.append(scores["sum_abs_pos"])
             self.results[edge].sum_abs_exp_score.append(scores["sum_abs_exp"])
