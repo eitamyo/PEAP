@@ -1614,7 +1614,9 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     )
 
     names_comb = [c for c in itertools.combinations(JAPANESE_NAMES, 5)
-                  if c[0][0] != c[1][0]]
+                #   Require different start token for s1 and IO, and same length for clean and counterfactual
+                  if c[0][0] != c[1][0] and 
+                    2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
     dataset_size = 30000
     print("comb:", len(names_comb))
     random.seed(seed)
