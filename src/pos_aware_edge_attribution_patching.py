@@ -384,7 +384,9 @@ def position_aware_edge_attribution_patching(
                 clean = clean_resid_pre_act.clone()  # batch seq d
                 counter = counter_resid_pre_act.clone()  # batch seq d
 
-            attribute_score_mlp = (grad_mlp[node.layer_idx:] * (counter - clean)).unsqueeze(1).repeat(1, len(exp.spans), 1, 1, 1)  # layer span batch seq d model
+            temp1 = counter - clean
+            temp2 = grad_mlp[node.layer_idx:] * temp1
+            attribute_score_mlp = temp2.unsqueeze(1).repeat(1, len(exp.spans), 1, 1, 1)  # layer span batch seq d model
             attribute_score_mlp_masked = torch.where(masks.unsqueeze(0).repeat(attribute_score_mlp.shape[0], 1, 1, 1, 1) == 1, attribute_score_mlp, 0)
             attribute_score_mlp_avg = (attribute_score_mlp_masked.sum(dim=( 2, 3, 4)) / lengths.unsqueeze(0).repeat(attribute_score_mlp.shape[0], 1)).detach().to(torch.float32).cpu().numpy()
             attribute_score_mlp_sum = (attribute_score_mlp_masked.sum(dim=(2, 3, 4))).detach().to(torch.float32).cpu().numpy()
