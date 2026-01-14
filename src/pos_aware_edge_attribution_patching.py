@@ -1016,11 +1016,11 @@ def position_aware_edge_attribution_patching(
                         }
                     else:
                         scores_q = {
-                            "avg": np.array([0]),
-                            "sum": np.array([0]),
-                            "sum_abs_pos": np.array([0]),
-                            "sum_abs_exp": np.array([0]),
-                            "max_abs": np.array([0])
+                            "avg": 0,#np.array([0]),
+                            "sum": 0,#np.array([0]),
+                            "sum_abs_pos": 0,#np.array([0]),
+                            "sum_abs_exp": 0,#np.array([0]),
+                            "max_abs": 0,#np.array([0])
                         }
                     results.update_score(edge, scores_q)
         del clean_cache, counter_cache,  clean_grad_cache, clean_head_act, grad, clean_head_results_act, \
