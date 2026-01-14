@@ -216,11 +216,15 @@ class EAPResults:
     
     def get_average_scores(self):
         for edge in self.results.keys():
-            self.results[edge].avg_score = np.mean(self.results[edge].avg_score, axis=0)
-            self.results[edge].sum_score = np.mean(self.results[edge].sum_score, axis=0)
-            self.results[edge].sum_abs_pos_score = np.mean(self.results[edge].sum_abs_pos_score, axis=0)
-            self.results[edge].sum_abs_exp_score = np.mean(self.results[edge].sum_abs_exp_score, axis=0)
-            self.results[edge].max_abs_score = np.mean(self.results[edge].max_abs_score, axis=0)
+            try:
+                self.results[edge].avg_score = np.mean(self.results[edge].avg_score, axis=0)
+                self.results[edge].sum_score = np.mean(self.results[edge].sum_score, axis=0)
+                self.results[edge].sum_abs_pos_score = np.mean(self.results[edge].sum_abs_pos_score, axis=0)
+                self.results[edge].sum_abs_exp_score = np.mean(self.results[edge].sum_abs_exp_score, axis=0)
+                self.results[edge].max_abs_score = np.mean(self.results[edge].max_abs_score, axis=0)
+            except Exception as e:
+                print("Error in edge:", edge, "with scores:", self.results[edge])
+                raise e
 
 
 @dataclass(frozen=True)
@@ -922,9 +926,11 @@ def position_aware_edge_attribution_patching(
             del mean_activations
             
         torch.cuda.empty_cache()
-
-    # Get the average scores for each edge
-    results.get_average_scores()
+    try:
+        # Get the average scores for each edge
+        results.get_average_scores()
+    except:
+        print("Error in getting average scores")
     
     with open(save_path, 'wb') as handle:
         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
