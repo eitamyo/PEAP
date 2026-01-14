@@ -1501,20 +1501,6 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     JAPANESE_NAMES = [
-        # "田中",
-        # "鈴木",
-        # "佐藤",
-        # "高橋",
-        # "渡辺",
-        # "伊藤",
-        # "山本",
-        # "中村",
-        # "小林",
-        # "加藤",
-        # "吉田",
-        # "山田",
-        # "佐々木",
-        # "山口",
         "翔太", "美咲", "大輔", "陽菜", "健太", 
         "結衣", "拓也", "愛", "直人", "未来", 
         "亮", "さくら", "哲也", "美優", "達也", 
@@ -1523,8 +1509,7 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         "彩", "剛", "優菜", "隼人", "里奈", 
         "陸", "美羽", "智也", "花", "蓮", 
         "杏奈", "聡", "千尋", "裕太", "美穂", 
-        "誠", "遥", "大樹", "真央", "修", 
-        "優", "光", "加奈", "雄大", "香織"
+        "誠", "遥", "大樹", "真央", "修", "光", "加奈", "雄大", "香織"
     ]
 
     PLACES = [
@@ -1550,12 +1535,6 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     ]
 
     ABBA_TEMPLATES = [
-        # "そして、[B]と[A]は[PLACE]に行きました。[B]は[OBJECT]を",
-        # "そして、[B]と[A]は[PLACE]でたくさん楽しみました。[B]は[OBJECT]を",
-        # "そして、[B]と[A]は[PLACE]で働いていました。[B]は[OBJECT]を",
-        # "そして、[B]と[A]は[PLACE]に行くことを考えていました。[B]は[OBJECT]を",
-        # "そして、[B]と[A]は長い議論をしました。その後、[B]は",
-        # "[B]と[A]が[PLACE]に行った後、[B]は[OBJECT]を",
         # 1. Passing an item
         "[PLACE]で[A]と[B]が話していた。[B]は[OBJECT]を取り出すと、",
 
@@ -1628,12 +1607,14 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         center_writing_weights=False,
         center_unembed=False,
         trust_remote_code=True,
+        default_prepend_bos=True,
         fold_ln=False,
         device="cuda",
         dtype=dtype
     )
 
-    names_comb = list(itertools.combinations(JAPANESE_NAMES, 5))
+    names_comb = [c for c in itertools.combinations(JAPANESE_NAMES, 5)
+                  if c[0][0] != c[1][0]]
     dataset_size = 30000
     print("comb:", len(names_comb))
     random.seed(seed)
@@ -1648,27 +1629,28 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
             "[A]", io_token).replace("[B]", s_token)
         tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
-        io_index = tokens_list.index(io_token)
-        s1_index = tokens_list.index(s_token)
+        io_tokens = model.to_str_tokens(io_token)
+        s_tokens = model.to_str_tokens(s_token)
+        io_index = tokens_list.index(io_tokens[0])
+        s1_index = tokens_list.index(s_tokens[0])
         s2_index = tokens_list[s1_index +
-                               1:].index(s_token) + s1_index + 1
+                               1:].index(s_tokens[0]) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
-        dataset_clean["S1"].append(s1_index)
-        dataset_clean["S1+1"].append(s1_index + 1)
         dataset_clean["IO"].append(io_index)
-        dataset_clean["action1"].append(io_index + 1)
+        dataset_clean["connector"].append(io_index + len(io_tokens))
+        dataset_clean["S1"].append(s1_index)
+        dataset_clean["action1"].append(s1_index + len(s_tokens))
         dataset_clean["S2"].append(s2_index)
-        dataset_clean["action2"].append(s2_index + 1)
-        dataset_clean["to"].append(len(tokens_list) - 1)
+        dataset_clean["action2"].append(s2_index + len(s_tokens))
         dataset_clean["length"].append(len(tokens_list))
-        dataset_clean["wrong_token"].append(s_token)
-        dataset_clean["correct_token"].append(io_token)
-        dataset_clean["S1_token"].append(s_token)
-        dataset_clean["S2_token"].append(s_token)
-        dataset_clean["IO_token"].append(io_token)
-        dataset_clean["label"].append(io_token)
+        dataset_clean["wrong_token"].append(s_tokens[0])
+        dataset_clean["correct_token"].append(io_tokens[0])
+        dataset_clean["S1_token"].append(s_tokens[0])
+        dataset_clean["S2_token"].append(s_tokens[0])
+        dataset_clean["IO_token"].append(io_tokens[0])
+        dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
         abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
@@ -1677,20 +1659,19 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
         dataset_counter_abc["prefix"].append(1)
-        dataset_counter_abc["S1"].append(s1_index)
-        dataset_counter_abc["S1+1"].append(s1_index + 1)
         dataset_counter_abc["IO"].append(io_index)
-        dataset_counter_abc["action1"].append(io_index + 1)
+        dataset_counter_abc["connector"].append(io_index + len(io_tokens))
+        dataset_counter_abc["S1"].append(s1_index)
+        dataset_counter_abc["action1"].append(s1_index + len(s_tokens))
         dataset_counter_abc["S2"].append(s2_index)
-        dataset_counter_abc["action2"].append(s2_index + 1)
-        dataset_counter_abc["to"].append(len(tokens_list) - 1)
+        dataset_counter_abc["action2"].append(s2_index + len(s_tokens))
         dataset_counter_abc["length"].append(len(tokens_list))
-        dataset_counter_abc["wrong_token"].append(s_token)
-        dataset_counter_abc["correct_token"].append(io_token)
-        dataset_counter_abc["S1_token"].append(s_token)
-        dataset_counter_abc["S2_token"].append(s_token)
-        dataset_counter_abc["IO_token"].append(io_token)
-        dataset_counter_abc["label"].append(io_token)
+        dataset_counter_abc["wrong_token"].append(s_tokens[0])
+        dataset_counter_abc["correct_token"].append(io_tokens[0])
+        dataset_counter_abc["S1_token"].append(s_tokens[0])
+        dataset_counter_abc["S2_token"].append(s_tokens[0])
+        dataset_counter_abc["IO_token"].append(io_tokens[0])
+        dataset_counter_abc["label"].append(io_tokens[0])
         dataset_counter_abc["split"].append(types[i])
 
     dataset_clean = pd.DataFrame.from_dict(dataset_clean)
@@ -1710,11 +1691,10 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_jp_data_counter_abc.csv'))
 
-    eval_model_on_ioi(model_name, type_dataset="ABBA",
+    eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
 
-
-def eval_model_on_ioi(model_name: str, type_dataset: Literal["ABBA", "BABA"], save_dir: str, batch_size: int = 8) -> None:
+def eval_model_on_ioi(model_name: str, type_dataset: str, save_dir: str, batch_size: int = 8) -> None:
     """
     Evaluate a model's performance on the IOI (Indirect Object Identification) task.
 
@@ -1748,6 +1728,7 @@ def eval_model_on_ioi(model_name: str, type_dataset: Literal["ABBA", "BABA"], sa
         center_writing_weights=False,
         center_unembed=False,
         trust_remote_code=True,
+        default_prepend_bos=True,
         fold_ln=False,
         device="cuda",
         dtype=dtype
