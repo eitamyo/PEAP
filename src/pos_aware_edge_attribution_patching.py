@@ -282,6 +282,7 @@ def position_aware_edge_attribution_patching(
         center_writing_weights=False,
         center_unembed=False,
         trust_remote_code=True,
+        default_prepend_bos=True,
         fold_ln=False,
         device="cuda",
         dtype=dtype
