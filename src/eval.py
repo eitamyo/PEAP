@@ -117,6 +117,7 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
         center_writing_weights=False,
         center_unembed=False,
         trust_remote_code=True,
+        default_prepend_bos=True,
         fold_ln=False,
         device="cuda" if torch.cuda.is_available() else "cpu",
         dtype=dtype
@@ -138,11 +139,11 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
     print("test_df shape:", test_df.shape)
     
     # temp
-    test_edge = Edge(upstream_layer_idx=0, upstream_head_idx=None, upstream_type='r', upstream_full_name='blocks.0.hook_resid_pre', downstream_layer_idx=0, downstream_head_idx=None, downstream_type='m', downstream_full_name='blocks.0.hook_mlp_in', span_upstream=None, span_downstream=None, is_crossing=False)
-    if test_edge in full_results.results:
-        print("Found test edge in full results")
-    else:
-        print("Did not find test edge in full results")
+    # test_edge = Edge(upstream_layer_idx=0, upstream_head_idx=None, upstream_type='r', upstream_full_name='blocks.0.hook_resid_pre', downstream_layer_idx=0, downstream_head_idx=None, downstream_type='m', downstream_full_name='blocks.0.hook_mlp_in', span_upstream=None, span_downstream=None, is_crossing=False)
+    # if test_edge in full_results.results:
+    #     print("Found test edge in full results")
+    # else:
+    #     print("Did not find test edge in full results")
 
     model_edges, model_nodes = full_computation_graph_size(
         model=model, exp=exp, df=test_df, use_point_of_diff=False)
