@@ -6,7 +6,7 @@ import torch
 
 import pandas as pd
 
-from typing import  Literal, List
+from typing import Literal, List
 
 from dataclasses import dataclass
 
@@ -15,12 +15,11 @@ import numpy as np
 import pickle
 
 import random
-from pos_aware_edge_attribution_patching import  Experiament, WinoBias, GreaterThan, IOI, logit_diff, prob_diff, EAPResults, Edge, EdgeScore, Node
-from eval_utils import  find_abstract_circuit_size_k , full_computation_graph_size, find_abstract_circuit_size_k_reversed,run_edges_with_mean_ablation, calculate_prior_performance, calculate_model_performance
+from pos_aware_edge_attribution_patching import Experiament, WinoBias, GreaterThan, IOI, logit_diff, prob_diff, EAPResults, Edge, EdgeScore, Node
+from eval_utils import find_abstract_circuit_size_k, full_computation_graph_size, find_abstract_circuit_size_k_reversed, run_edges_with_mean_ablation, calculate_prior_performance, calculate_model_performance
 import argparse
 import os
 from dataclasses import dataclass
-
 
 
 @dataclass()
@@ -61,8 +60,8 @@ class EvalResults:
         model_num_edges (int): Total number of edges in full model
         model_diff_point_num_edges (int): Number of edges for the first token to be different from the counterfactual prompt
     """
-    
-    def __init__(self, exp, n_examples, n_ablation_size, top_k, top_k_used, circuit_size, diff_list, acc_list, circuit_prediction_list, model_prediction_list ,test_df, model_logit_diff, prior_logit_diff, model_num_edges, model_diff_point_num_edges):
+
+    def __init__(self, exp, n_examples, n_ablation_size, top_k, top_k_used, circuit_size, diff_list, acc_list, circuit_prediction_list, model_prediction_list, test_df, model_logit_diff, prior_logit_diff, model_num_edges, model_diff_point_num_edges):
         self.exp = exp
         self.n_examples = n_examples
         self.n_ablation_size = n_ablation_size
@@ -78,9 +77,9 @@ class EvalResults:
         self.prior_logit_diff = prior_logit_diff
         self.model_num_edges = model_num_edges
         self.model_diff_point_num_edges = model_diff_point_num_edges
-    
-    
-def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum_span_scores:bool, exp: Experiament, top_k: List[int], graph_with_pos: bool, ablation_size: int, search_type: Literal["abs","max","min"], is_reversed: bool, patch_q: bool) -> None:
+
+
+def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum_span_scores: bool, exp: Experiament, top_k: List[int], graph_with_pos: bool, ablation_size: int, search_type: Literal["abs", "max", "min"], is_reversed: bool, patch_q: bool) -> None:
     """
     Run the full circuit discovery pipline.
     1. Find the circuit at size k
@@ -101,17 +100,17 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
     Returns:
         None: Results are printed and saved rather than returned
     """
-    print("eval_size:",eval_size)
-    print("peap_results_path:",peap_results_path)
-    print("exp:",exp)
-    print("top_k:",top_k)
-    print("graph_with_pos:",graph_with_pos)
-    print("ablation_size:",ablation_size)
-    print("search_type:",search_type)
-    print("is_reversed:",is_reversed)
-    print("sum_span_scores",sum_span_scores)
-    print("patch_q",patch_q)
-    
+    print("eval_size:", eval_size)
+    print("peap_results_path:", peap_results_path)
+    print("exp:", exp)
+    print("top_k:", top_k)
+    print("graph_with_pos:", graph_with_pos)
+    print("ablation_size:", ablation_size)
+    print("search_type:", search_type)
+    print("is_reversed:", is_reversed)
+    print("sum_span_scores", sum_span_scores)
+    print("patch_q", patch_q)
+
     dtype = "bf16" if "Llama" in exp.model_path else "fp32"
     model = HookedTransformer.from_pretrained(
         exp.model_path,
@@ -127,24 +126,33 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
     model.set_use_attn_result(True)
     model.set_ungroup_grouped_query_attention(True)
 
-
     torch.manual_seed(exp.seed)
     torch.cuda.manual_seed(exp.seed)
     np.random.seed(exp.seed)
     random.seed(exp.seed)
-    
-    
+
     with open(peap_results_path, 'rb') as f:
         full_results = pickle.load(f)
-    
+
     test_df = exp.get_df_for_eval(n_examples=eval_size)
-    print("test_df shape:",test_df.shape)
+    print("test_df shape:", test_df.shape)
     
-    model_edges, model_nodes = full_computation_graph_size(model=model,exp=exp,df=test_df,use_point_of_diff=False)
-    model_edges_diff_point, model_nodes_diff_point = full_computation_graph_size(model=model,exp=exp,df=test_df, use_point_of_diff=True)
-    model_performance = calculate_model_performance(model=model,exp=exp,test_df=test_df)
-    prior_metric = calculate_prior_performance(model=model,test_df=test_df,exp=exp, sample_ablation_size=ablation_size)
-    
+    # temp
+    test_edge = Edge(upstream_layer_idx=0, upstream_head_idx=None, upstream_type='r', upstream_full_name='blocks.0.hook_resid_pre', downstream_layer_idx=0, downstream_head_idx=None, downstream_type='m', downstream_full_name='blocks.0.hook_mlp_in', span_upstream=None, span_downstream=None, is_crossing=False)
+    if test_edge in full_results.results:
+        print("Found test edge in full results")
+    else:
+        print("Did not find test edge in full results")
+
+    model_edges, model_nodes = full_computation_graph_size(
+        model=model, exp=exp, df=test_df, use_point_of_diff=False)
+    model_edges_diff_point, model_nodes_diff_point = full_computation_graph_size(
+        model=model, exp=exp, df=test_df, use_point_of_diff=True)
+    model_performance = calculate_model_performance(
+        model=model, exp=exp, test_df=test_df)
+    prior_metric = calculate_prior_performance(
+        model=model, test_df=test_df, exp=exp, sample_ablation_size=ablation_size)
+
     all_diff_list = []
     all_acc_list = []
     all_mean_circuit_size_list = []
@@ -156,52 +164,50 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
     for k in top_k:
         print(k)
         if is_reversed:
-            circuit = find_abstract_circuit_size_k_reversed(model=model, exp=exp, span_type=span_type, full_results=full_results, top_k=k, search_type=search_type, with_pos=graph_with_pos)
+            circuit = find_abstract_circuit_size_k_reversed(
+                model=model, exp=exp, span_type=span_type, full_results=full_results, top_k=k, search_type=search_type, with_pos=graph_with_pos)
         else:
-            circuit = find_abstract_circuit_size_k(model=model, exp=exp, span_type=span_type, full_results=full_results, top_k=k, search_type=search_type, with_pos=graph_with_pos)
+            circuit = find_abstract_circuit_size_k(
+                model=model, exp=exp, span_type=span_type, full_results=full_results, top_k=k, search_type=search_type, with_pos=graph_with_pos)
         print(len(circuit.nodes))
         if len(circuit.edges) == 0:
             continue
         top_k_used.append(k)
 
-        diff_list, acc_list, mean_circuit_size_list, circuit_prediction_list, model_prediction_list = run_edges_with_mean_ablation(model=model,test_df=test_df,abstract_circuit=circuit,exp=exp, with_pos=graph_with_pos ,sample_ablation_size=ablation_size, patch_q=patch_q)
-        
+        diff_list, acc_list, mean_circuit_size_list, circuit_prediction_list, model_prediction_list = run_edges_with_mean_ablation(
+            model=model, test_df=test_df, abstract_circuit=circuit, exp=exp, with_pos=graph_with_pos, sample_ablation_size=ablation_size, patch_q=patch_q)
+
         all_mean_circuit_size_list.append(mean_circuit_size_list)
         all_diff_list.append(diff_list)
         all_acc_list.append(acc_list)
         all_circuit_prediction_list.append(circuit_prediction_list)
         all_model_prediction_list.append(model_prediction_list)
 
-    
-    
         eval_results = EvalResults(exp=exp,
-                                n_examples=eval_size,
-                                n_ablation_size=ablation_size,
-                                top_k=top_k,
-                                top_k_used=top_k_used,
-                                circuit_size=all_mean_circuit_size_list,
-                                diff_list=all_diff_list,
-                                acc_list=all_acc_list,
-                                circuit_prediction_list=all_circuit_prediction_list,
-                                model_prediction_list=all_model_prediction_list,
-                                test_df=test_df,
-                                model_logit_diff=model_performance,
-                                prior_logit_diff=prior_metric,
-                                model_num_edges=model_edges,
-                                model_diff_point_num_edges=model_edges_diff_point)
-        
-        
-                
+                                   n_examples=eval_size,
+                                   n_ablation_size=ablation_size,
+                                   top_k=top_k,
+                                   top_k_used=top_k_used,
+                                   circuit_size=all_mean_circuit_size_list,
+                                   diff_list=all_diff_list,
+                                   acc_list=all_acc_list,
+                                   circuit_prediction_list=all_circuit_prediction_list,
+                                   model_prediction_list=all_model_prediction_list,
+                                   test_df=test_df,
+                                   model_logit_diff=model_performance,
+                                   prior_logit_diff=prior_metric,
+                                   model_num_edges=model_edges,
+                                   model_diff_point_num_edges=model_edges_diff_point)
 
         with open(save_path, 'wb') as handle:
             pickle.dump(eval_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
-        
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-at", "--ablation_type", required=True, type=str, choices=["counterfactual", "mean", "zero"],
                     help="ablation type")
-    ap.add_argument("-e", "--exp", required=True, type=str,choices=["wino_bias", "greater_than", "ioi"],
+    ap.add_argument("-e", "--exp", required=True, type=str, choices=["wino_bias", "greater_than", "ioi"],
                     help="exp name")
     ap.add_argument("-cl", "--clean", required=True, type=str,
                     help="name of the clean df file")
@@ -225,10 +231,12 @@ if __name__ == "__main__":
                     help="path to the peap results")
     ap.add_argument("-gpos", "--graph_with_pos", action='store_true')
     ap.add_argument("-r", "--reversed", action='store_true')
-    ap.add_argument("-st", "--search_type", required=True, type=str, choices=["abs","max","min"],
-                help="search type")
-    ap.add_argument("-ss", "--sum_scores", action='store_true', help="if to sum scores at the span. If not, use the avg score")
-    ap.add_argument("-dpq", "--d_patch_q", action='store_false', help="if to patch the query vectors")
+    ap.add_argument("-st", "--search_type", required=True, type=str, choices=["abs", "max", "min"],
+                    help="search type")
+    ap.add_argument("-ss", "--sum_scores", action='store_true',
+                    help="if to sum scores at the span. If not, use the avg score")
+    ap.add_argument("-dpq", "--d_patch_q", action='store_false',
+                    help="if to patch the query vectors")
 
     args = vars(ap.parse_args())
     slurm_job_id = os.getenv('SLURM_JOB_ID')
@@ -237,44 +245,44 @@ if __name__ == "__main__":
     model_path = args['model']
     if "wino_bias" in args["exp"]:
         exp = WinoBias(exp_name=args["exp"],
-                    model_name=model_name,
-                    model_path=model_path,
-                    ablation_type=args['ablation_type'],
-                    clean_dataset_path=args['clean'],
-                    counter_dataset_path=args['counter'],
-                    spans=args['spans'],
-                    metric=logit_diff,
-                    seed=args['seed'])
+                       model_name=model_name,
+                       model_path=model_path,
+                       ablation_type=args['ablation_type'],
+                       clean_dataset_path=args['clean'],
+                       counter_dataset_path=args['counter'],
+                       spans=args['spans'],
+                       metric=logit_diff,
+                       seed=args['seed'])
     elif "greater_than" in args["exp"]:
         exp = GreaterThan(exp_name=args["exp"],
-                        model_name=model_name,
-                        model_path=model_path,
-                        ablation_type=args['ablation_type'],
-                        clean_dataset_path=args['clean'],
-                        counter_dataset_path=args['counter'],
-                        spans=args['spans'],
-                        metric=prob_diff,
-                        seed=args['seed'])
+                          model_name=model_name,
+                          model_path=model_path,
+                          ablation_type=args['ablation_type'],
+                          clean_dataset_path=args['clean'],
+                          counter_dataset_path=args['counter'],
+                          spans=args['spans'],
+                          metric=prob_diff,
+                          seed=args['seed'])
     elif "ioi" in args["exp"]:
         exp = IOI(exp_name=args["exp"],
-                model_name=model_name,
-                model_path=model_path,
-                ablation_type=args['ablation_type'],
-                clean_dataset_path=args['clean'],
-                counter_dataset_path=args['counter'],
-                spans=args['spans'],
-                metric=logit_diff,
-                seed=args['seed'])
-    
+                  model_name=model_name,
+                  model_path=model_path,
+                  ablation_type=args['ablation_type'],
+                  clean_dataset_path=args['clean'],
+                  counter_dataset_path=args['counter'],
+                  spans=args['spans'],
+                  metric=logit_diff,
+                  seed=args['seed'])
+
     run_faithfulness(
-            eval_size=args['n_examples'],
-            peap_results_path=args["peap_results_path"],
-            sum_span_scores=args['sum_scores'],
-            exp=exp,
-            top_k=args['topk'],
-            graph_with_pos=args['graph_with_pos'],
-            ablation_size=args['ablation_size'],
-            search_type=args['search_type'],
-            is_reversed=args['reversed'],
-            patch_q=args["d_patch_q"],
-            save_path=args["save_path"])
+        eval_size=args['n_examples'],
+        peap_results_path=args["peap_results_path"],
+        sum_span_scores=args['sum_scores'],
+        exp=exp,
+        top_k=args['topk'],
+        graph_with_pos=args['graph_with_pos'],
+        ablation_size=args['ablation_size'],
+        search_type=args['search_type'],
+        is_reversed=args['reversed'],
+        patch_q=args["d_patch_q"],
+        save_path=args["save_path"])
