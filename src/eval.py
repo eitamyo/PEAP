@@ -13,6 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 
 import pickle
+import networkx as nx
 
 import random
 from pos_aware_edge_attribution_patching import Experiament, WinoBias, GreaterThan, IOI, logit_diff, prob_diff, EAPResults, Edge, EdgeScore, Node
@@ -39,6 +40,7 @@ class EvalResults:
     prior_logit_diff: float
     model_num_edges: int
     model_diff_point_num_edges: int
+    abstract_circuits: List[nx.DiGraph]
 
     """
     A class to store and manage evaluation for the full circuit discovery pipline.
@@ -60,14 +62,13 @@ class EvalResults:
         model_num_edges (int): Total number of edges in full model
         model_diff_point_num_edges (int): Number of edges for the first token to be different from the counterfactual prompt
     """
-
-    def __init__(self, exp, n_examples, n_ablation_size, top_k, top_k_used, circuit_size, diff_list, acc_list, circuit_prediction_list, model_prediction_list, test_df, model_logit_diff, prior_logit_diff, model_num_edges, model_diff_point_num_edges):
+    def __init__(self, exp, n_examples, n_ablation_size, top_k, top_k_used, mean_circuit_size, diff_list, acc_list, circuit_prediction_list, model_prediction_list, test_df, model_logit_diff, prior_logit_diff, model_num_edges, model_diff_point_num_edges, abstract_circuits=None):
         self.exp = exp
         self.n_examples = n_examples
         self.n_ablation_size = n_ablation_size
         self.top_k = top_k
         self.top_k_used = top_k_used
-        self.mean_circuit_size = circuit_size
+        self.mean_circuit_size = mean_circuit_size
         self.diff_list = diff_list
         self.acc_list = acc_list
         self.circuit_prediction_list = circuit_prediction_list
@@ -77,9 +78,10 @@ class EvalResults:
         self.prior_logit_diff = prior_logit_diff
         self.model_num_edges = model_num_edges
         self.model_diff_point_num_edges = model_diff_point_num_edges
+        self.abstract_circuits = abstract_circuits
 
 
-def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum_span_scores: bool, exp: Experiament, top_k: List[int], graph_with_pos: bool, ablation_size: int, search_type: Literal["abs", "max", "min"], is_reversed: bool, patch_q: bool) -> None:
+def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum_span_scores: bool, exp: Experiament, top_k: List[int], graph_with_pos: bool, ablation_size: int, search_type: Literal["abs", "max", "min"], is_reversed: bool, patch_q: bool, save_abstract_circuits: bool = False) -> None:
     """
     Run the full circuit discovery pipline.
     1. Find the circuit at size k
@@ -96,6 +98,7 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
         search_type (Literal["abs","max","min"]): Type of circuit discovery strategy to use
         is_reversed (bool): Whether to reverse the circuit direction
         patch_q (bool): Whether to patch query vectors
+        save_abstract_circuits (bool): Whether to save to file the discovered abstract circuits
 
     Returns:
         None: Results are printed and saved rather than returned
@@ -160,6 +163,7 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
     all_circuit_prediction_list = []
     all_model_prediction_list = []
     top_k_used = []
+    all_abstract_circuits = []
     print("top_k:", top_k)
     span_type = "sum_score" if sum_span_scores else "avg_score"
     for k in top_k:
@@ -189,7 +193,7 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
                                    n_ablation_size=ablation_size,
                                    top_k=top_k,
                                    top_k_used=top_k_used,
-                                   circuit_size=all_mean_circuit_size_list,
+                                   mean_circuit_size=all_mean_circuit_size_list,
                                    diff_list=all_diff_list,
                                    acc_list=all_acc_list,
                                    circuit_prediction_list=all_circuit_prediction_list,
@@ -199,6 +203,9 @@ def run_faithfulness(eval_size: int, peap_results_path: str, save_path: str, sum
                                    prior_logit_diff=prior_metric,
                                    model_num_edges=model_edges,
                                    model_diff_point_num_edges=model_edges_diff_point)
+        if save_abstract_circuits:
+            all_abstract_circuits.append(circuit)
+            eval_results.abstract_circuits = all_abstract_circuits
 
         with open(save_path, 'wb') as handle:
             pickle.dump(eval_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
