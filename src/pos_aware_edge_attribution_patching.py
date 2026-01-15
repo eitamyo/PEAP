@@ -1031,11 +1031,11 @@ def position_aware_edge_attribution_patching(
             del mean_activations
 
         torch.cuda.empty_cache()
-    # try:
-    #     # Get the average scores for each edge
-    #     results.get_average_scores()
-    # except:
-    #     print("Error in getting average scores")
+    try:
+        # Get the average scores for each edge
+        results.get_average_scores()
+    except:
+        print("Error in getting average scores")
 
     with open(save_path, 'wb') as handle:
         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
