@@ -1631,6 +1631,12 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
             "[A]", io_token).replace("[B]", s_token)
         tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
+        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
+            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+        abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
+        if len(tokens_list) != len(abc_tokens_list):
+            continue
+        
         io_tokens = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(s_token)
         io_index = tokens_list.index(io_tokens[0])
@@ -1655,15 +1661,13 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
-        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
-            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
-        tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
+        
         a_tokens = model.to_str_tokens(a_token)
         b_tokens = model.to_str_tokens(b_token)
         c_tokens = model.to_str_tokens(c_token)
-        a_index = tokens_list.index(a_tokens[0])
-        b_index = tokens_list.index(b_tokens[0])
-        c_index = tokens_list.index(c_tokens[0])
+        a_index = abc_tokens_list.index(a_tokens[0])
+        b_index = abc_tokens_list.index(b_tokens[0])
+        c_index = abc_tokens_list.index(c_tokens[0])
 
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
