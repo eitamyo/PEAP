@@ -13,7 +13,7 @@ import itertools
 # import pysvelte
 import math
 from transformer_lens import HookedTransformer
-from typing import Literal
+from typing import Literal, Tuple
 
 
 def add_space(x):
@@ -1487,7 +1487,7 @@ def create_IOI_dataset_BABA(model_name: str, save_dir: str, seed: int = 42) -> N
 
 def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
-    Generate IOI (Indirect Object Identification) dataset in ABBA format, for japanese.
+    Generate IOI (Indirect Object Identification) japanese dataset in ABBA format.
 
     This function creates a dataset of sentences following the Indirect Object Identification (IOI)
     pattern in ABBA format, where names are arranged in an ABBA pattern (e.g., "Name2 Name1 Name1 Name2").
@@ -1501,14 +1501,14 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     JAPANESE_NAMES = [
-        "翔太", "美咲", "大輔", "陽菜", "健太", 
-        "結衣", "拓也", "愛", "直人", "未来", 
-        "亮", "さくら", "哲也", "美優", "達也", 
-        "七海", "一輝", "葵", "翼", "美月", 
-        "和也", "楓", "涼太", "優花", "直樹", 
-        "彩", "剛", "優菜", "隼人", "里奈", 
-        "陸", "美羽", "智也", "花", "蓮", 
-        "杏奈", "聡", "千尋", "裕太", "美穂", 
+        "翔太", "美咲", "大輔", "陽菜", "健太",
+        "結衣", "拓也", "愛", "直人", "未来",
+        "亮", "さくら", "哲也", "美優", "達也",
+        "七海", "一輝", "葵", "翼", "美月",
+        "和也", "楓", "涼太", "優花", "直樹",
+        "彩", "剛", "優菜", "隼人", "里奈",
+        "陸", "美羽", "智也", "花", "蓮",
+        "杏奈", "聡", "千尋", "裕太", "美穂",
         "誠", "遥", "大樹", "真央", "修", "光", "加奈", "雄大", "香織"
     ]
 
@@ -1583,7 +1583,8 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
 
     ABC_TEMPLATES = [
         # Replace second [B] with [C]
-        template[:template.find('[B]', template.find('[B]') + 1)] + '[C]' + template[template.find('[B]', template.find('[B]') + 1) + len('[B]'):]
+        template[:template.find('[B]', template.find('[B]') + 1)] + '[C]' +
+        template[template.find('[B]', template.find('[B]') + 1) + len('[B]'):]
         for template in ABBA_TEMPLATES
     ]
 
@@ -1614,9 +1615,9 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     )
 
     names_comb = [c for c in itertools.combinations(JAPANESE_NAMES, 5)
-                #   Require different start token for s1 and IO, and same length for clean and counterfactual
-                  if c[0][0] != c[1][0] and 
-                    2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
+                  #   Require different start token for s1 and IO, and same length for clean and counterfactual
+                  if c[0][0] != c[1][0] and
+                  2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
     dataset_size = 30000
     print("comb:", len(names_comb))
     random.seed(seed)
@@ -1636,7 +1637,7 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
         if len(tokens_list) != len(abc_tokens_list):
             continue
-        
+
         io_tokens = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(s_token)
         io_index = tokens_list.index(io_tokens[0])
@@ -1661,7 +1662,6 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
-        
         a_tokens = model.to_str_tokens(a_token)
         b_tokens = model.to_str_tokens(b_token)
         c_tokens = model.to_str_tokens(c_token)
@@ -1706,6 +1706,297 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
 
     eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
+
+
+def create_IOI_es_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
+    """
+    Generate IOI (Indirect Object Identification) spanish dataset in ABBA format.
+
+    This function creates a dataset of sentences following the Indirect Object Identification (IOI) 
+    pattern in ABBA format, where names are arranged in an ABBA pattern (e.g., "Name1 Name2 Name2 Name1").
+    The task is to identify the correct referent in sentences with this structure.
+
+    Args:
+        model_name (str): Name of the model being evaluated
+
+    Returns:
+        None: Saves generated datasets as CSV files in data/{model_name}/ioi/{seed}/ directories
+
+    """
+    NAMES = ['Ana',
+             'Sergio',
+             'Lola',
+             'Alan',
+             'Oscar',
+             'Laura',
+             'Martin',
+             'María',
+             'Rosa',
+             'Kelly',
+             'Paula',
+             'Eric',
+             'Rafael',
+             'Gabriel',
+             'Jeffrey',
+             'Carlos',
+             'Dustin',
+             'Kenneth',
+             'Antonio',
+             'Carmen',
+             'Kevin',
+             'Elena',
+             'José',
+             'Andrea',
+             'Jaime',
+             'Samuel',
+             'Gloria',
+             'Alejandro',
+             'Cody',
+             'Bruno',
+             'Jorge',
+             'Diego',
+             'Victor',
+             'Daniel',
+             'Roberto',
+             'Diana',
+             'Isabel',
+             'Miguel',
+             'Juan',
+             'Hugo',
+             'Kimberly',
+             'Kristen',
+             'Felix',
+             'Amanda',
+             'Mario',
+             'Travis',
+             'Bradley',
+             'Pablo',
+             'Clara',
+             'Alison',
+             'Shannon',
+             'Jonathan',
+             'Samantha',
+             'Sara',
+             'Megan',
+             'Justin',
+             'Michelle',
+             'Lindsay',
+             'Bryan',
+             'Jesse',
+             'Erin',
+             'Jennifer',
+             'Manuel',
+             'Eva',
+             'Sean',
+             'Vanessa',
+             'Pedro',
+             'Melissa',
+             'Marcos',
+             'Erica',
+             'Brian',
+             'Tiffany',
+             'Luis',
+             'Ricardo',
+             'Lucas',
+             'Max',
+             'Julia',
+             'Lisa',
+             'Cristina',
+             'Leo',
+             'Nicole',
+             'David',
+             'Alicia',
+             'Hector',
+             'Joel',
+             'Courtney',
+             'Ivan']
+    # Included 'el/la' and 'al' logic can be tricky,
+    # so we include the preposition+article for the location to make templates simpler.
+    PLACES = [
+        "a la tienda",
+        "al jardín",
+        "al restaurante",
+        "a la escuela",
+        "al hospital",
+        "a la oficina",
+        "a la casa",
+        "a la estación",
+    ]
+
+    # All objects selected are Masculine to ensure "dárselo" (give it) works for all.
+    OBJECTS = [
+        "un anillo",
+        "un beso",
+        "un hueso",
+        "un balón",         # basketball
+        "un ordenador",     # computer (using masculine form)
+        "un collar",
+        "un refresco",      # drink (using masculine form)
+        "un bocadillo",     # snack (using masculine form)
+    ]
+
+    BABA_TEMPLATES = [
+        "Entonces, [A] y [B] fueron [PLACE]. [B] le dio [OBJECT] a",
+        "Entonces, [A] y [B] se divirtieron mucho en [PLACE]. [B] le dio [OBJECT] a",
+        "Entonces, [A] y [B] estaban trabajando en [PLACE]. [B] decidió darle [OBJECT] a",
+        "Entonces, [A] y [B] estaban pensando en ir [PLACE]. [B] quería darle [OBJECT] a",
+        "Entonces, [A] y [B] tuvieron una larga discusión, y después [B] le dijo a",
+        "Después de que [A] y [B] fueran [PLACE], [B] le dio [OBJECT] a",
+        "Cuando [A] y [B] consiguieron [OBJECT] en [PLACE], [B] decidió dárselo a",
+        "Cuando [A] y [B] consiguieron [OBJECT] en [PLACE], [B] decidió dar el objeto a",
+        "Mientras [A] y [B] trabajaban en [PLACE], [B] le dio [OBJECT] a",
+        "Mientras [A] y [B] iban [PLACE], [B] le dio [OBJECT] a",
+        "Después del almuerzo, [A] y [B] fueron [PLACE]. [B] le dio [OBJECT] a",
+        "Más tarde, [A] y [B] fueron [PLACE]. [B] le dio [OBJECT] a",
+        "Entonces, [A] y [B] tuvieron una larga discusión. Después [B] le dijo a",
+        "[PLACE] al que fueron [A] y [B] tenía [OBJECT]. [B] se lo dio a",
+        "Los amigos [A] y [B] encontraron [OBJECT] en [PLACE]. [B] se lo dio a",
+    ]
+
+    ABC_TEMPLATES = [
+        "Entonces, [B] y [A] fueron [PLACE]. [C] le dio [OBJECT] a",
+        "Entonces, [B] y [A] se divirtieron mucho en [PLACE]. [C] le dio [OBJECT] a",
+        "Entonces, [B] y [A] estaban trabajando en [PLACE]. [C] decidió darle [OBJECT] a",
+        "Entonces, [B] y [A] estaban pensando en ir [PLACE]. [C] quería darle [OBJECT] a",
+        "Entonces, [B] y [A] tuvieron una larga discusión, y después [C] le dijo a",
+        "Después de que [B] y [A] fueran [PLACE], [C] le dio [OBJECT] a",
+        "Cuando [B] y [A] consiguieron [OBJECT] en [PLACE], [C] decidió dárselo a",
+        "Cuando [B] y [A] consiguieron [OBJECT] en [PLACE], [C] decidió dar el objeto a",
+        "Mientras [B] y [A] trabajaban en [PLACE], [C] le dio [OBJECT] a",
+        "Mientras [B] y [A] iban [PLACE], [C] le dio [OBJECT] a",
+        "Después del almuerzo, [B] y [A] fueron [PLACE]. [C] le dio [OBJECT] a",
+        "Más tarde, [B] y [A] fueron [PLACE]. [C] le dio [OBJECT] a",
+        "Entonces, [B] y [A] tuvieron una larga discusión. Después [C] le dijo a",
+        "[PLACE] al que fueron [B] y [A] tenía [OBJECT]. [C] se lo dio a",
+        "Los amigos [B] y [A] encontraron [OBJECT] en [PLACE]. [C] se lo dio a",
+    ]
+
+    BABA_FULL_TEMPLATES = []
+    ABC_FULL_TEMPLATES = []
+
+    for template in BABA_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                BABA_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+    for template in ABC_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                ABC_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+
+    dtype = "bf16" if "Llama" else "float32"
+    model = HookedTransformer.from_pretrained(
+        model_name,
+        center_writing_weights=False,
+        center_unembed=False,
+        trust_remote_code=True,
+        fold_ln=False,
+        device="cuda",
+        dtype=dtype
+    )
+
+    # name_token_count = {}
+    # for name in NAMES:
+    #     name_token_count[name] = len(
+    #         model.to_str_tokens(" " + name)
+    #     )
+
+    names_comb = list(itertools.combinations(NAMES, 5))
+    dataset_size = 30000
+    print("comb:", len(names_comb))
+    random.seed(seed)
+    types = random.choices(["circuit", "eval", "ablation"], weights=[
+                           10, 10, 80], k=len(names_comb))
+    dataset_clean = defaultdict(list)
+    dataset_counter_abc = defaultdict(list)
+    names_comb_seed = random.sample(names_comb, dataset_size)
+    for i in tqdm(range(len(names_comb_seed))):
+        s_token, io_token, a_token, b_token, c_token = names_comb_seed[i]
+        template_index = random.randint(0, len(BABA_FULL_TEMPLATES) - 1)
+        baba_prompt = BABA_FULL_TEMPLATES[template_index].replace(
+            "[A]", io_token).replace("[B]", s_token)
+        tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
+        io_index = tokens_list.index(" " + io_token)
+        s1_index = tokens_list.index(" " + s_token)
+        s2_index = tokens_list[s1_index +
+                               1:].index(" " + s_token) + s1_index + 1
+        dataset_clean["prompt"].append(baba_prompt)
+        dataset_clean["prompt_id"].append(template_index)
+        dataset_clean["prefix"].append(1)
+        dataset_clean["IO"].append(io_index)
+        dataset_clean["and"].append(io_index + 1)
+        dataset_clean["S1"].append(s1_index)
+        dataset_clean["S1+1"].append(s1_index+1)
+        dataset_clean["action1"].append(s1_index + 2)
+        dataset_clean["S2"].append(s2_index)
+        dataset_clean["action2"].append(s2_index + 1)
+        dataset_clean["to"].append(len(tokens_list) - 1)
+        dataset_clean["length"].append(len(tokens_list))
+        dataset_clean["wrong_token"].append(" " + s_token)
+        dataset_clean["correct_token"].append(" " + io_token)
+        dataset_clean["S1_token"].append(" " + s_token)
+        dataset_clean["S2_token"].append(" " + s_token)
+        dataset_clean["IO_token"].append(" " + io_token)
+        dataset_clean["label"].append(" " + io_token)
+        dataset_clean["split"].append(types[i])
+
+        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
+            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+
+        dataset_counter_abc["prompt"].append(abc_prompt)
+        dataset_counter_abc["prompt_id"].append(template_index)
+        dataset_counter_abc["prefix"].append(1)
+        dataset_counter_abc["IO"].append(io_index)
+        dataset_counter_abc["and"].append(io_index + 1)
+        dataset_counter_abc["S1"].append(s1_index)
+        dataset_counter_abc["S1+1"].append(s1_index+1)
+        dataset_counter_abc["action1"].append(s1_index + 2)
+        dataset_counter_abc["S2"].append(s2_index)
+        dataset_counter_abc["action2"].append(s2_index + 1)
+        dataset_counter_abc["to"].append(len(tokens_list) - 1)
+        dataset_counter_abc["length"].append(len(tokens_list))
+        dataset_counter_abc["wrong_token"].append(" " + s_token)
+        dataset_counter_abc["correct_token"].append(" " + io_token)
+        dataset_counter_abc["S1_token"].append(" " + s_token)
+        dataset_counter_abc["S2_token"].append(" " + s_token)
+        dataset_counter_abc["IO_token"].append(" " + io_token)
+        dataset_counter_abc["label"].append(" " + io_token)
+        dataset_counter_abc["split"].append(types[i])
+
+    dataset_clean = pd.DataFrame.from_dict(dataset_clean)
+    print("data size:", dataset_clean.shape[0])
+    dataset_clean = dataset_clean.drop_duplicates()
+
+    dataset_counter_abc = pd.DataFrame.from_dict(dataset_counter_abc)
+    dataset_counter_abc = dataset_counter_abc[dataset_counter_abc.index.isin(
+        dataset_clean.index)]
+
+    dataset_clean = dataset_clean.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+    dataset_counter_abc = dataset_counter_abc.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+
+    dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_data_clean.csv'))
+    dataset_counter_abc.to_csv(os.path.join(
+        save_dir, f'IOI_ABBA_data_counter_abc.csv'))
+
+    eval_model_on_ioi(model_name=model_name,
+                      type_dataset="ABBA", save_dir=save_dir)
+
+
+def is_name_combination_valid(name_comb: Tuple[str, str, str, str, str], names_token_count) -> bool:
+    # Ensure s1 and IO start with different letters
+    if name_comb[0][0] == name_comb[1][0]:
+        return False
+    clean_len = 2*names_token_count[name_comb[0]
+                                    ] + names_token_count[name_comb[1]]
+    cf_len = names_token_count[name_comb[2]] + \
+        names_token_count[name_comb[3]] + names_token_count[name_comb[4]]
+    if clean_len != cf_len:
+        return False
+    return True
+
 
 def eval_model_on_ioi(model_name: str, type_dataset: str, save_dir: str, batch_size: int = 8) -> None:
     """
