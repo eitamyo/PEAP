@@ -1653,6 +1653,8 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["action1"].append(s1_index + len(s_tokens))
         dataset_clean["S2"].append(s2_index)
         dataset_clean["action2"].append(s2_index + len(s_tokens))
+        # Not really "to" in Japanese, but for consistency
+        dataset_clean["to"].append(len(tokens_list) - 1)
         dataset_clean["length"].append(len(tokens_list))
         dataset_clean["wrong_token"].append(s_tokens[0])
         dataset_clean["correct_token"].append(io_tokens[0])
@@ -1678,6 +1680,7 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["action1"].append(b_index + len(b_tokens))
         dataset_counter_abc["S2"].append(c_index)
         dataset_counter_abc["action2"].append(c_index + len(c_tokens))
+        dataset_counter_abc["to"].append(len(tokens_list) - 1)
         dataset_counter_abc["length"].append(len(tokens_list))
         dataset_counter_abc["wrong_token"].append(s_tokens[0])
         dataset_counter_abc["correct_token"].append(io_tokens[0])
