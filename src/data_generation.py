@@ -1710,6 +1710,185 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
 
+def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
+    """
+    Generate IOI (Indirect Object Identification) japanese dataset in ABBA format.
+
+    This function creates a dataset of sentences following the Indirect Object Identification (IOI)
+    pattern in ABBA format, where names are arranged in an ABBA pattern (e.g., "Name2 Name1 Name1 Name2").
+    The task is to identify the correct referent in sentences with this structure.
+
+    Args:
+        model_name (str): Name of the model being evaluated
+
+    Returns:
+        None: Saves generated datasets as CSV files in data/{model_name}/ioi/{seed}/ directories
+    """
+
+    TURKISH_NAMES = [
+        "Ahmet", "Ali", "Alp", "Arda", "Berk", 
+        "Burak", "Can", "Cem", "Deniz", "Ege", 
+        "Emre", "Hakan", "Hasan", "Hüseyin", "İbrahim", 
+        "Kaan", "Kemal", "Kerem", "Mehmet", "Mert", 
+        "Murat", "Mustafa", "Onur", "Ozan", "Tarık",
+        "Aslı", "Aylin", "Ayşe", "Büşra", "Cansu", 
+        "Ceren", "Derya", "Ece", "Elif", "Esra", 
+        "Fatma", "Gizem", "Gözde", "İrem", "Melis", 
+        "Merve", "Özge", "Pelin", "Pınar", "Seda", 
+        "Selin", "Sinem", "Tuğba", "Yasemin", "Zeynep"
+    ]
+
+    PLACES = [
+        "Okul", "Park", "Kütüphane", "Kafe", "Market", 
+        "Hastane", "Sinema", "Banka", "Ofis", "Müze"
+    ]
+    OBJECTS = [
+        "Kitap", "Anahtar", "Kalem", "Telefon", "Dosya", 
+        "Mektup", "Hediye", "Paket", "Çiçek", "Cüzdan"
+    ]
+
+    ABBA_TEMPLATES = [
+        "Sonra [A] ve [B] [PLACE]'e gittiler. [B] elindeki [OBJECT]'i doğrudan",
+        "Sabah [A] ile [B] [PLACE]'te buluştular. [B] çantasından çıkardığı [OBJECT]'i",
+        "Dün [A] ve [B] [PLACE]'e yürüdüler. [B] yolda bulduğu [OBJECT]'i hemen",
+        "Bugün [A] ile [B] [PLACE] civarındaydı. [B] yeni aldığı [OBJECT]'i göstermek için",
+        "Öğleden sonra [A] ve [B] [PLACE]'e vardılar. [B] taşıdığı ağır [OBJECT]'i",
+        "Akşam [A] ile [B] [PLACE]'te oturuyorlardı. [B] masanın üzerindeki [OBJECT]'i yavaşça",
+        "Ertesi gün [A] ve [B] [PLACE] kapısındaydılar. [B] cebinde sakladığı [OBJECT]'i",
+        "Hafta sonu [A] ile [B] [PLACE]'e geziye gittiler. [B] hatıra olarak aldığı [OBJECT]'i",
+        "Nihayet [A] ve [B] [PLACE] içinde karşılaştılar. [B] dikkatlice tuttuğu [OBJECT]'i",
+        "Gece [A] ile [B] [PLACE] etrafında dolaşıyordu. [B] parlayan [OBJECT]'i işaret ederek",
+    ]
+
+    ABC_TEMPLATES = [
+        # Replace second [B] with [C]
+        template[:template.find('[B]', template.find('[B]') + 1)] + '[C]' +
+        template[template.find('[B]', template.find('[B]') + 1) + len('[B]'):]
+        for template in ABBA_TEMPLATES
+    ]
+
+    ABBA_FULL_TEMPLATES = []
+    ABC_FULL_TEMPLATES = []
+
+    for template in ABBA_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                ABBA_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+    for template in ABC_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                ABC_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+
+    dtype = "bf16" if "Llama" else "float32"
+    model = HookedTransformer.from_pretrained(
+        model_name,
+        center_writing_weights=False,
+        center_unembed=False,
+        trust_remote_code=True,
+        # default_prepend_bos=True,
+        fold_ln=False,
+        device="cuda",
+        dtype=dtype
+    )
+
+    names_comb = [c for c in itertools.combinations(TURKISH_NAMES, 5)
+                  # Require different start token for s1 and IO, and same length for clean and counterfactual
+                  if c[0][0] != c[1][0] and
+                  2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
+    dataset_size = 30000
+    print("comb:", len(names_comb))
+    random.seed(seed)
+    types = random.choices(["circuit", "eval", "ablation"], weights=[
+                           10, 10, 80], k=len(names_comb))
+    dataset_clean = defaultdict(list)
+    dataset_counter_abc = defaultdict(list)
+    names_comb_seed = random.sample(names_comb, dataset_size)
+    for i in tqdm(range(len(names_comb_seed))):
+        s_token, io_token, a_token, b_token, c_token = names_comb_seed[i]
+        template_index = random.randint(0, len(ABBA_FULL_TEMPLATES) - 1)
+        baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
+            "[A]", io_token).replace("[B]", s_token)
+        tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
+        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
+            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+        abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
+        if len(tokens_list) != len(abc_tokens_list):
+            continue
+
+        io_tokens = model.to_str_tokens(io_token)
+        s_tokens = model.to_str_tokens(s_token)
+        io_index = tokens_list.index(io_tokens[0])
+        s1_index = tokens_list.index(s_tokens[0])
+        s2_index = tokens_list[s1_index +
+                               1:].index(s_tokens[0]) + s1_index + 1
+        dataset_clean["prompt"].append(baba_prompt)
+        dataset_clean["prompt_id"].append(template_index)
+        dataset_clean["prefix"].append(1)
+        dataset_clean["IO"].append(io_index)
+        dataset_clean["connector"].append(io_index + len(io_tokens))
+        dataset_clean["S1"].append(s1_index)
+        dataset_clean["action1"].append(s1_index + len(s_tokens))
+        dataset_clean["S2"].append(s2_index)
+        dataset_clean["action2"].append(s2_index + len(s_tokens))
+        # Not really "to" in Turkish, but for consistency
+        dataset_clean["to"].append(len(tokens_list) - 1)
+        dataset_clean["length"].append(len(tokens_list))
+        dataset_clean["wrong_token"].append(s_tokens[0])
+        dataset_clean["correct_token"].append(io_tokens[0])
+        dataset_clean["S1_token"].append(s_tokens[0])
+        dataset_clean["S2_token"].append(s_tokens[0])
+        dataset_clean["IO_token"].append(io_tokens[0])
+        dataset_clean["label"].append(io_tokens[0])
+        dataset_clean["split"].append(types[i])
+
+        a_tokens = model.to_str_tokens(a_token)
+        b_tokens = model.to_str_tokens(b_token)
+        c_tokens = model.to_str_tokens(c_token)
+        a_index = abc_tokens_list.index(a_tokens[0])
+        b_index = abc_tokens_list.index(b_tokens[0])
+        c_index = abc_tokens_list.index(c_tokens[0])
+
+        dataset_counter_abc["prompt"].append(abc_prompt)
+        dataset_counter_abc["prompt_id"].append(template_index)
+        dataset_counter_abc["prefix"].append(1)
+        dataset_counter_abc["IO"].append(a_index)
+        dataset_counter_abc["connector"].append(a_index + len(a_tokens))
+        dataset_counter_abc["S1"].append(b_index)
+        dataset_counter_abc["action1"].append(b_index + len(b_tokens))
+        dataset_counter_abc["S2"].append(c_index)
+        dataset_counter_abc["action2"].append(c_index + len(c_tokens))
+        dataset_counter_abc["to"].append(len(tokens_list) - 1)
+        dataset_counter_abc["length"].append(len(tokens_list))
+        dataset_counter_abc["wrong_token"].append(s_tokens[0])
+        dataset_counter_abc["correct_token"].append(io_tokens[0])
+        dataset_counter_abc["S1_token"].append(s_tokens[0])
+        dataset_counter_abc["S2_token"].append(s_tokens[0])
+        dataset_counter_abc["IO_token"].append(io_tokens[0])
+        dataset_counter_abc["label"].append(io_tokens[0])
+        dataset_counter_abc["split"].append(types[i])
+
+    dataset_clean = pd.DataFrame.from_dict(dataset_clean)
+    print("data size:", dataset_clean.shape[0])
+    dataset_clean = dataset_clean.drop_duplicates()
+
+    dataset_counter_abc = pd.DataFrame.from_dict(dataset_counter_abc)
+    dataset_counter_abc = dataset_counter_abc[dataset_counter_abc.index.isin(
+        dataset_clean.index)]
+
+    dataset_clean = dataset_clean.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+    dataset_counter_abc = dataset_counter_abc.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+
+    dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_tr_data_clean.csv'))
+    dataset_counter_abc.to_csv(os.path.join(
+        save_dir, f'IOI_ABBA_tr_data_counter_abc.csv'))
+
+    eval_model_on_ioi(model_name, type_dataset="ABBA_tr",
+                      save_dir=save_dir, batch_size=8)
+
 
 def create_IOI_es_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
