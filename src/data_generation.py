@@ -1910,7 +1910,8 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         frac=1, random_state=seed).reset_index(drop=True)
     dataset_counter_abc = dataset_counter_abc.sample(
         frac=1, random_state=seed).reset_index(drop=True)
-
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_tr_data_clean.csv'))
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_tr_data_counter_abc.csv'))
