@@ -1826,8 +1826,8 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         if len(tokens_list) != len(abc_tokens_list):
             continue
 
-        io_tokens = model.to_str_tokens(io_token)
-        s_tokens = model.to_str_tokens(s_token)
+        io_tokens = model.to_str_tokens(" " + io_token)
+        s_tokens = model.to_str_tokens(" " + s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
             print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
@@ -1859,9 +1859,9 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
-        a_tokens = model.to_str_tokens(a_token)
-        b_tokens = model.to_str_tokens(b_token)
-        c_tokens = model.to_str_tokens(c_token)
+        a_tokens = model.to_str_tokens(" " + a_token)
+        b_tokens = model.to_str_tokens(" " + b_token)
+        c_tokens = model.to_str_tokens(" " + c_token)
         
         a_index = find_sublist_index(abc_tokens_list, a_tokens)
         if a_index == -1:
