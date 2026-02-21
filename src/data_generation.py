@@ -1710,6 +1710,15 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
 
+def find_sublist_index(main_list, sub_list):
+    """Returns first index of sub_list of main_list. Otherwise, returns -1."""
+    n = len(main_list)
+    m = len(sub_list)
+    for i in range(n - m + 1):
+        if main_list[i:i+m] == sub_list:
+            return i
+    return -1
+
 def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
     Generate IOI (Indirect Object Identification) japanese dataset in ABBA format.
@@ -1819,10 +1828,17 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
 
         io_tokens = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(s_token)
-        io_index = tokens_list.index(io_tokens[0])
-        s1_index = tokens_list.index(s_tokens[0])
-        s2_index = tokens_list[s1_index +
-                               1:].index(s_tokens[0]) + s1_index + 1
+        io_index = find_sublist_index(tokens_list, io_tokens)
+        if io_index == -1:
+            print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(f"Tokens list: {tokens_list}, IO token list: {io_tokens}")
+            continue
+        s1_index = find_sublist_index(tokens_list, s_tokens)
+        if s1_index == -1:
+            print(f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(f"Tokens list: {tokens_list}, S1 token list: {s_tokens}")
+            continue
+        s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -1846,9 +1862,22 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         a_tokens = model.to_str_tokens(a_token)
         b_tokens = model.to_str_tokens(b_token)
         c_tokens = model.to_str_tokens(c_token)
-        a_index = abc_tokens_list.index(a_tokens[0])
-        b_index = abc_tokens_list.index(b_tokens[0])
-        c_index = abc_tokens_list.index(c_tokens[0])
+        
+        a_index = find_sublist_index(abc_tokens_list, a_tokens)
+        if a_index == -1:
+            print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
+            continue
+        b_index = find_sublist_index(abc_tokens_list, b_tokens)
+        if b_index == -1:
+            print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
+            continue
+        c_index = find_sublist_index(abc_tokens_list, c_tokens)
+        if c_index == -1:
+            print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
+            continue
 
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
