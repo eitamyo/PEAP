@@ -1728,16 +1728,16 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     ABBA_TEMPLATES = [
-        "[PLACE]에서 [A]와(과) [B]가 이야기를 나누고 있었습니다. [B]가 [OBJECT]을(를) 꺼내어 ",
-        "[PLACE]에 [A]와(과) [B]가 함께 도착했습니다. [B]는 미리 준비한 [OBJECT]을(를) 내밀며 ",
-        "[PLACE]에서 [A]와(과) [B]가 공부를 하고 있었습니다. 갑자기 [B]가 [OBJECT]을(를) 집어 들고는 ",
-        "어느 화창한 날, [PLACE]에서 [A]와(과) [B]가 산책을 했습니다. [B]가 바닥에서 [OBJECT]을(를) 주워서 ",
-        "[PLACE]에서 [A]와(과) [B]가 쇼핑을 했습니다. [B]가 새로 산 [OBJECT]을(를) 포장해서 ",
-        "[PLACE]에 [A]와(과) [B]가 앉아있었습니다. [B]는 자신이 아끼는 [OBJECT]을(를) 챙겨서 ",
-        "[PLACE]에서 [A]와(과) [B]가 놀고 있었습니다. [B]가 예쁜 [OBJECT]을(를) 발견하고는 ",
-        "조용한 [PLACE]에서 [A]와(과) [B]가 식사를 마쳤습니다. [B]가 가방에서 [OBJECT]을(를) 꺼내더니 ",
-        "[PLACE]에서 [A]와(과) [B]가 게임을 했습니다. 벌칙으로 [B]가 [OBJECT]을(를) 건네며 ",
-        "[PLACE]에 [A]와(과) [B]가 방문했습니다. [B]는 기념품으로 산 [OBJECT]을(를) 조심스럽게 "
+        "[PLACE]에서 [A]와(과) [B]가 이야기를 나누고 있었습니다. [B]가 [OBJECT]을(를) 꺼내어",
+        "[PLACE]에 [A]와(과) [B]가 함께 도착했습니다. [B]는 미리 준비한 [OBJECT]을(를) 내밀며",
+        "[PLACE]에서 [A]와(과) [B]가 공부를 하고 있었습니다. 갑자기 [B]가 [OBJECT]을(를) 집어 들고는",
+        "어느 화창한 날, [PLACE]에서 [A]와(과) [B]가 산책을 했습니다. [B]가 바닥에서 [OBJECT]을(를) 주워서",
+        "[PLACE]에서 [A]와(과) [B]가 쇼핑을 했습니다. [B]가 새로 산 [OBJECT]을(를) 포장해서",
+        "[PLACE]에 [A]와(과) [B]가 앉아있었습니다. [B]는 자신이 아끼는 [OBJECT]을(를) 챙겨서",
+        "[PLACE]에서 [A]와(과) [B]가 놀고 있었습니다. [B]가 예쁜 [OBJECT]을(를) 발견하고는",
+        "조용한 [PLACE]에서 [A]와(과) [B]가 식사를 마쳤습니다. [B]가 가방에서 [OBJECT]을(를) 꺼내더니",
+        "[PLACE]에서 [A]와(과) [B]가 게임을 했습니다. 벌칙으로 [B]가 [OBJECT]을(를) 건네며",
+        "[PLACE]에 [A]와(과) [B]가 방문했습니다. [B]는 기념품으로 산 [OBJECT]을(를) 조심스럽게"
     ]
     
     def has_batchim(word):
@@ -1884,9 +1884,9 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             continue
 
         io_tokens = model.to_str_tokens(" " + io_token)
-        io_tokens_ns = model.to_str_tokens(io_token)
+        # io_tokens_ns = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(" " + s_token)
-        s_tokens_ns = model.to_str_tokens(s_token)
+        # s_tokens_ns = model.to_str_tokens(s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
             # print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
@@ -1912,12 +1912,18 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         # Not really "to" in Japanese, but for consistency
         dataset_clean["to"].append(len(tokens_list) - 1)
         dataset_clean["length"].append(len(tokens_list))
-        dataset_clean["wrong_token"].append(s_tokens_ns[0])
-        dataset_clean["correct_token"].append(io_tokens_ns[0])
-        dataset_clean["S1_token"].append(s_tokens_ns[0])
-        dataset_clean["S2_token"].append(s_tokens_ns[0])
-        dataset_clean["IO_token"].append(io_tokens_ns[0])
-        dataset_clean["label"].append(io_tokens_ns[0])
+        dataset_clean["wrong_token"].append(s_tokens[0])
+        dataset_clean["correct_token"].append(io_tokens[0])
+        dataset_clean["S1_token"].append(s_tokens[0])
+        dataset_clean["S2_token"].append(s_tokens[0])
+        dataset_clean["IO_token"].append(io_tokens[0])
+        dataset_clean["label"].append(io_tokens[0])
+        # dataset_clean["wrong_token"].append(s_tokens_ns[0])
+        # dataset_clean["correct_token"].append(io_tokens_ns[0])
+        # dataset_clean["S1_token"].append(s_tokens_ns[0])
+        # dataset_clean["S2_token"].append(s_tokens_ns[0])
+        # dataset_clean["IO_token"].append(io_tokens_ns[0])
+        # dataset_clean["label"].append(io_tokens_ns[0])
         dataset_clean["split"].append(types[i])
 
         a_tokens = model.to_str_tokens(" " + a_token)
@@ -1954,12 +1960,18 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["action2"].append(c_index + len(c_tokens))
         dataset_counter_abc["to"].append(len(tokens_list) - 1)
         dataset_counter_abc["length"].append(len(tokens_list))
-        dataset_counter_abc["wrong_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["correct_token"].append(io_tokens_ns[0])
-        dataset_counter_abc["S1_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["S2_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["IO_token"].append(io_tokens_ns[0])
-        dataset_counter_abc["label"].append(io_tokens_ns[0])
+        dataset_counter_abc["wrong_token"].append(s_tokens[0])
+        dataset_counter_abc["correct_token"].append(io_tokens[0])
+        dataset_counter_abc["S1_token"].append(s_tokens[0])
+        dataset_counter_abc["S2_token"].append(s_tokens[0])
+        dataset_counter_abc["IO_token"].append(io_tokens[0])
+        dataset_counter_abc["label"].append(io_tokens[0])
+        # dataset_counter_abc["wrong_token"].append(s_tokens_ns[0])
+        # dataset_counter_abc["correct_token"].append(io_tokens_ns[0])
+        # dataset_counter_abc["S1_token"].append(s_tokens_ns[0])
+        # dataset_counter_abc["S2_token"].append(s_tokens_ns[0])
+        # dataset_counter_abc["IO_token"].append(io_tokens_ns[0])
+        # dataset_counter_abc["label"].append(io_tokens_ns[0])
         dataset_counter_abc["split"].append(types[i])
 
     dataset_clean = pd.DataFrame.from_dict(dataset_clean)
