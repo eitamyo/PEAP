@@ -1973,16 +1973,16 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     ]
 
     ABBA_TEMPLATES = [
-        "कल [A] और [B] [PLACE] गए थे। वहाँ एक [OBJECT] खरीदने के बाद, [B] ने ",
-        "सुबह [A] और [B] [PLACE] पहुँचे। अपना [OBJECT] निकालने के तुरंत बाद, [B] ने ",
-        "जब [A] और [B] [PLACE] में घूम रहे थे, तब वह [OBJECT] उठाकर [B] ने ",
-        "दोपहर को [A] और [B] [PLACE] में मिले। अपना [OBJECT] ढूँढने के बाद, [B] ने ",
-        "जैसे ही [A] और [B] [PLACE] के अंदर गए, वह [OBJECT] चुपके से लेकर [B] ने ",
-        "शाम को [A] और [B] [PLACE] से लौटे। रास्ते में वह [OBJECT] निकालकर [B] ने सीधे ",
-        "छुट्टियों में [A] और [B] [PLACE] गए थे। वहाँ एक सुंदर [OBJECT] पैक करने के बाद, [B] ने ",
-        "पिछली बार जब [A] और [B] [PLACE] में थे, तब वह [OBJECT] झट से निकालकर [B] ने ",
-        "जब [A] और [B] [PLACE] में बात कर रहे थे, तब अपना [OBJECT] पकड़कर [B] ने ",
-        "आज [A] और [B] [PLACE] पर रुके। अपना पुराना [OBJECT] बाहर लाने के बाद, [B] ने "
+        "कल [A] और [B] [PLACE] गए थे। वहाँ एक [OBJECT] खरीदने के बाद, [B] ने",
+        "सुबह [A] और [B] [PLACE] पहुँचे। अपना [OBJECT] निकालने के तुरंत बाद, [B] ने",
+        "जब [A] और [B] [PLACE] में घूम रहे थे, तब वह [OBJECT] उठाकर [B] ने",
+        "दोपहर को [A] और [B] [PLACE] में मिले। अपना [OBJECT] ढूँढने के बाद, [B] ने",
+        "जैसे ही [A] और [B] [PLACE] के अंदर गए, वह [OBJECT] चुपके से लेकर [B] ने",
+        "शाम को [A] और [B] [PLACE] से लौटे। रास्ते में वह [OBJECT] निकालकर [B] ने सीधे",
+        "छुट्टियों में [A] और [B] [PLACE] गए थे। वहाँ एक सुंदर [OBJECT] पैक करने के बाद, [B] ने",
+        "पिछली बार जब [A] और [B] [PLACE] में थे, तब वह [OBJECT] झट से निकालकर [B] ने",
+        "जब [A] और [B] [PLACE] में बात कर रहे थे, तब अपना [OBJECT] पकड़कर [B] ने",
+        "आज [A] और [B] [PLACE] पर रुके। अपना पुराना [OBJECT] बाहर लाने के बाद, [B] ने"
     ]
 
     ABC_TEMPLATES = [
@@ -2043,9 +2043,9 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             continue
 
         io_tokens = model.to_str_tokens(" " + io_token)
-        io_tokens_ns = model.to_str_tokens(io_token)
+        # io_tokens_ns = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(" " + s_token)
-        s_tokens_ns = model.to_str_tokens(s_token)
+        # s_tokens_ns = model.to_str_tokens(s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
             print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
@@ -2069,12 +2069,12 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         # Not really "to" in Turkish, but for consistency
         dataset_clean["to"].append(len(tokens_list) - 1)
         dataset_clean["length"].append(len(tokens_list))
-        dataset_clean["wrong_token"].append(s_tokens_ns[0])
-        dataset_clean["correct_token"].append(io_tokens_ns[0])
-        dataset_clean["S1_token"].append(s_tokens_ns[0])
-        dataset_clean["S2_token"].append(s_tokens_ns[0])
-        dataset_clean["IO_token"].append(io_tokens_ns[0])
-        dataset_clean["label"].append(io_tokens_ns[0])
+        dataset_clean["wrong_token"].append(s_tokens[0])
+        dataset_clean["correct_token"].append(io_tokens[0])
+        dataset_clean["S1_token"].append(s_tokens[0])
+        dataset_clean["S2_token"].append(s_tokens[0])
+        dataset_clean["IO_token"].append(io_tokens[0])
+        dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
         a_tokens = model.to_str_tokens(" " + a_token)
@@ -2108,12 +2108,12 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["action2"].append(c_index + len(c_tokens))
         dataset_counter_abc["to"].append(len(tokens_list) - 1)
         dataset_counter_abc["length"].append(len(tokens_list))
-        dataset_counter_abc["wrong_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["correct_token"].append(io_tokens_ns[0])
-        dataset_counter_abc["S1_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["S2_token"].append(s_tokens_ns[0])
-        dataset_counter_abc["IO_token"].append(io_tokens_ns[0])
-        dataset_counter_abc["label"].append(io_tokens_ns[0])
+        dataset_counter_abc["wrong_token"].append(s_tokens[0])
+        dataset_counter_abc["correct_token"].append(io_tokens[0])
+        dataset_counter_abc["S1_token"].append(s_tokens[0])
+        dataset_counter_abc["S2_token"].append(s_tokens[0])
+        dataset_counter_abc["IO_token"].append(io_tokens[0])
+        dataset_counter_abc["label"].append(io_tokens[0])
         dataset_counter_abc["split"].append(types[i])
 
     dataset_clean = pd.DataFrame.from_dict(dataset_clean)
