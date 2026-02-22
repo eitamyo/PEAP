@@ -1849,11 +1849,20 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             continue
 
         io_tokens = model.to_str_tokens(io_token)
+        io_tokens_ns = model.to_str_tokens(io_token)
         s_tokens = model.to_str_tokens(s_token)
-        io_index = tokens_list.index(io_tokens[0])
-        s1_index = tokens_list.index(s_tokens[0])
-        s2_index = tokens_list[s1_index +
-                               1:].index(s_tokens[0]) + s1_index + 1
+        s_tokens_ns = model.to_str_tokens(s_token)
+        io_index = find_sublist_index(tokens_list, io_tokens)
+        if io_index == -1:
+            print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(f"Tokens list: {tokens_list}, IO token list: {io_tokens}")
+            continue
+        s1_index = find_sublist_index(tokens_list, s_tokens)
+        if s1_index == -1:
+            print(f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(f"Tokens list: {tokens_list}, S1 token list: {s_tokens}")
+            continue
+        s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -1866,20 +1875,33 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         # Not really "to" in Japanese, but for consistency
         dataset_clean["to"].append(len(tokens_list) - 1)
         dataset_clean["length"].append(len(tokens_list))
-        dataset_clean["wrong_token"].append(s_tokens[0])
-        dataset_clean["correct_token"].append(io_tokens[0])
-        dataset_clean["S1_token"].append(s_tokens[0])
-        dataset_clean["S2_token"].append(s_tokens[0])
-        dataset_clean["IO_token"].append(io_tokens[0])
-        dataset_clean["label"].append(io_tokens[0])
+        dataset_clean["wrong_token"].append(s_tokens_ns[0])
+        dataset_clean["correct_token"].append(io_tokens_ns[0])
+        dataset_clean["S1_token"].append(s_tokens_ns[0])
+        dataset_clean["S2_token"].append(s_tokens_ns[0])
+        dataset_clean["IO_token"].append(io_tokens_ns[0])
+        dataset_clean["label"].append(io_tokens_ns[0])
         dataset_clean["split"].append(types[i])
 
-        a_tokens = model.to_str_tokens(a_token)
-        b_tokens = model.to_str_tokens(b_token)
-        c_tokens = model.to_str_tokens(c_token)
-        a_index = abc_tokens_list.index(a_tokens[0])
-        b_index = abc_tokens_list.index(b_tokens[0])
-        c_index = abc_tokens_list.index(c_tokens[0])
+        a_tokens = model.to_str_tokens(" " + a_token)
+        b_tokens = model.to_str_tokens(" " + b_token)
+        c_tokens = model.to_str_tokens(" " + c_token)
+        
+        a_index = find_sublist_index(abc_tokens_list, a_tokens)
+        if a_index == -1:
+            print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
+            continue
+        b_index = find_sublist_index(abc_tokens_list, b_tokens)
+        if b_index == -1:
+            print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
+            continue
+        c_index = find_sublist_index(abc_tokens_list, c_tokens)
+        if c_index == -1:
+            print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
+            continue
 
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
@@ -1892,12 +1914,12 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_counter_abc["action2"].append(c_index + len(c_tokens))
         dataset_counter_abc["to"].append(len(tokens_list) - 1)
         dataset_counter_abc["length"].append(len(tokens_list))
-        dataset_counter_abc["wrong_token"].append(s_tokens[0])
-        dataset_counter_abc["correct_token"].append(io_tokens[0])
-        dataset_counter_abc["S1_token"].append(s_tokens[0])
-        dataset_counter_abc["S2_token"].append(s_tokens[0])
-        dataset_counter_abc["IO_token"].append(io_tokens[0])
-        dataset_counter_abc["label"].append(io_tokens[0])
+        dataset_counter_abc["wrong_token"].append(s_tokens_ns[0])
+        dataset_counter_abc["correct_token"].append(io_tokens_ns[0])
+        dataset_counter_abc["S1_token"].append(s_tokens_ns[0])
+        dataset_counter_abc["S2_token"].append(s_tokens_ns[0])
+        dataset_counter_abc["IO_token"].append(io_tokens_ns[0])
+        dataset_counter_abc["label"].append(io_tokens_ns[0])
         dataset_counter_abc["split"].append(types[i])
 
     dataset_clean = pd.DataFrame.from_dict(dataset_clean)
