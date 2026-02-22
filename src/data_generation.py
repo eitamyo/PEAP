@@ -1141,7 +1141,8 @@ def create_IOI_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> N
         frac=1, random_state=seed).reset_index(drop=True)
     dataset_counter_abc = dataset_counter_abc.sample(
         frac=1, random_state=seed).reset_index(drop=True)
-
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_data_clean.csv'))
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_data_counter_abc.csv'))
@@ -1702,7 +1703,8 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         frac=1, random_state=seed).reset_index(drop=True)
     dataset_counter_abc = dataset_counter_abc.sample(
         frac=1, random_state=seed).reset_index(drop=True)
-
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_jp_data_clean.csv'))
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_jp_data_counter_abc.csv'))
@@ -1973,7 +1975,8 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         frac=1, random_state=seed).reset_index(drop=True)
     dataset_counter_abc = dataset_counter_abc.sample(
         frac=1, random_state=seed).reset_index(drop=True)
-
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_ko_data_clean.csv'))
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_ko_data_counter_abc.csv'))
@@ -2677,7 +2680,8 @@ def create_IOI_es_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         frac=1, random_state=seed).reset_index(drop=True)
     dataset_counter_abc = dataset_counter_abc.sample(
         frac=1, random_state=seed).reset_index(drop=True)
-
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_data_clean.csv'))
     dataset_counter_abc.to_csv(os.path.join(
         save_dir, f'IOI_ABBA_data_counter_abc.csv'))
