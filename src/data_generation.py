@@ -1712,6 +1712,7 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
 
+
 def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
     Generate IOI (Indirect Object Identification) korean dataset in ABBA format.
@@ -1739,7 +1740,7 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         "[PLACE]에서 [A]와(과) [B]가 게임을 했습니다. 벌칙으로 [B]가 [OBJECT]을(를) 건네며",
         "[PLACE]에 [A]와(과) [B]가 방문했습니다. [B]는 기념품으로 산 [OBJECT]을(를) 조심스럽게"
     ]
-    
+
     def has_batchim(word):
         """
         Checks if the last character of a Korean word has a final consonant (batchim).
@@ -1749,7 +1750,7 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         if '가' <= last_char <= '힣':
             return (ord(last_char) - 0xAC00) % 28 > 0
         return False
-    
+
     def format_josa(text, placeholder, word, particle_vowel, particle_consonant):
         """
         Replaces the placeholder and its generic particle marker with the correct one.
@@ -1759,9 +1760,10 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         if target not in text:
             # Check reverse formatting just in case, e.g., 을(를) vs 를(을) - usually written as 을(를)
             target = f"{placeholder}{particle_consonant}({particle_vowel})"
-            
-        correct_particle = particle_consonant if has_batchim(word) else particle_vowel
-        
+
+        correct_particle = particle_consonant if has_batchim(
+            word) else particle_vowel
+
         # Also replace standard bare placeholders without particle markers attached in the template string
         text = text.replace(target, f"{word}{correct_particle}")
         text = text.replace(placeholder, word)
@@ -1769,22 +1771,22 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
 
     def generate_full_template(template, place, obj):
         result = template
-        
+
         # # Process particles for [A]
         # result = format_josa(result, "[A]", a, "와", "과")
-        
+
         # # Process particles for [B] (Handles both 은/는 and 이/가)
         # result = format_josa(result, "[B]", b, "는", "은")
         # result = format_josa(result, "[B]", b, "가", "이")
-        
+
         # Process particles for [OBJECT]
         result = format_josa(result, "[OBJECT]", obj, "를", "을")
-        
+
         # Replace [PLACE] (using standard replace since particles for places in templates are static like '에서' or '에')
         result = result.replace("[PLACE]", place)
-        
+
         return result
-    
+
     def populate_template(template, a, b, c=None):
         result = template
         result = format_josa(result, "[A]", a, "와", "과")
@@ -1842,11 +1844,13 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     for template in ABBA_TEMPLATES:
         for place in PLACES:
             for obj in OBJECTS:
-                ABBA_FULL_TEMPLATES.append(generate_full_template(template, place, obj))
+                ABBA_FULL_TEMPLATES.append(
+                    generate_full_template(template, place, obj))
     for template in ABC_TEMPLATES:
         for place in PLACES:
             for obj in OBJECTS:
-                ABC_FULL_TEMPLATES.append(generate_full_template(template, place, obj))
+                ABC_FULL_TEMPLATES.append(
+                    generate_full_template(template, place, obj))
 
     dtype = "bf16" if "Llama" else "float32"
     model = HookedTransformer.from_pretrained(
@@ -1876,9 +1880,11 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     for i in tqdm(range(len(names_comb_seed))):
         s_token, io_token, a_token, b_token, c_token = names_comb_seed[i]
         template_index = random.randint(0, len(ABBA_FULL_TEMPLATES) - 1)
-        baba_prompt = populate_template(ABBA_FULL_TEMPLATES[template_index], io_token, s_token)
+        baba_prompt = populate_template(
+            ABBA_FULL_TEMPLATES[template_index], io_token, s_token)
         tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
-        abc_prompt = populate_template(ABC_FULL_TEMPLATES[template_index], a_token, b_token, c_token)
+        abc_prompt = populate_template(
+            ABC_FULL_TEMPLATES[template_index], a_token, b_token, c_token)
         abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
         if len(tokens_list) != len(abc_tokens_list):
             continue
@@ -1899,12 +1905,13 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             # print(f"Tokens list: {tokens_list}, S1 token list: {s_tokens}")
             invalid_count += 1
             continue
-        s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
-        
+        s2_index = find_sublist_index(
+            tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
+
         a_tokens = model.to_str_tokens(" " + a_token)
         b_tokens = model.to_str_tokens(" " + b_token)
         c_tokens = model.to_str_tokens(" " + c_token)
-        
+
         a_index = find_sublist_index(abc_tokens_list, a_tokens)
         if a_index == -1:
             # print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
@@ -1923,7 +1930,7 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             # print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
             invalid_count += 1
             continue
-        
+
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -1997,6 +2004,7 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_ko",
                       save_dir=save_dir, batch_size=8)
 
+
 def find_sublist_index(main_list, sub_list):
     """Returns first index of sub_list of main_list. Otherwise, returns -1."""
     n = len(main_list)
@@ -2005,6 +2013,7 @@ def find_sublist_index(main_list, sub_list):
         if main_list[i:i+m] == sub_list:
             return i
     return -1
+
 
 def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
@@ -2022,24 +2031,24 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     TURKISH_NAMES = [
-        "Ahmet", "Ali", "Alp", "Arda", "Berk", 
-        "Burak", "Can", "Cem", "Deniz", "Ege", 
-        "Emre", "Hakan", "Hasan", "Hüseyin", "İbrahim", 
-        "Kaan", "Kemal", "Kerem", "Mehmet", "Mert", 
+        "Ahmet", "Ali", "Alp", "Arda", "Berk",
+        "Burak", "Can", "Cem", "Deniz", "Ege",
+        "Emre", "Hakan", "Hasan", "Hüseyin", "İbrahim",
+        "Kaan", "Kemal", "Kerem", "Mehmet", "Mert",
         "Murat", "Mustafa", "Onur", "Ozan", "Tarık",
-        "Aslı", "Aylin", "Ayşe", "Büşra", "Cansu", 
-        "Ceren", "Derya", "Ece", "Elif", "Esra", 
-        "Fatma", "Gizem", "Gözde", "İrem", "Melis", 
-        "Merve", "Özge", "Pelin", "Pınar", "Seda", 
+        "Aslı", "Aylin", "Ayşe", "Büşra", "Cansu",
+        "Ceren", "Derya", "Ece", "Elif", "Esra",
+        "Fatma", "Gizem", "Gözde", "İrem", "Melis",
+        "Merve", "Özge", "Pelin", "Pınar", "Seda",
         "Selin", "Sinem", "Tuğba", "Yasemin", "Zeynep"
     ]
 
     PLACES = [
-        "Okul", "Park", "Kütüphane", "Kafe", "Market", 
+        "Okul", "Park", "Kütüphane", "Kafe", "Market",
         "Hastane", "Sinema", "Banka", "Ofis", "Müze"
     ]
     OBJECTS = [
-        "Kitap", "Anahtar", "Kalem", "Telefon", "Dosya", 
+        "Kitap", "Anahtar", "Kalem", "Telefon", "Dosya",
         "Mektup", "Hediye", "Paket", "Çiçek", "Cüzdan"
     ]
 
@@ -2117,15 +2126,18 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         s_tokens = model.to_str_tokens(" " + s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
-            print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(
+                f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
             print(f"Tokens list: {tokens_list}, IO token list: {io_tokens}")
             continue
         s1_index = find_sublist_index(tokens_list, s_tokens)
         if s1_index == -1:
-            print(f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(
+                f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
             print(f"Tokens list: {tokens_list}, S1 token list: {s_tokens}")
             continue
-        s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
+        s2_index = find_sublist_index(
+            tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -2149,20 +2161,23 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         a_tokens = model.to_str_tokens(" " + a_token)
         b_tokens = model.to_str_tokens(" " + b_token)
         c_tokens = model.to_str_tokens(" " + c_token)
-        
+
         a_index = find_sublist_index(abc_tokens_list, a_tokens)
         if a_index == -1:
-            print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
             continue
         b_index = find_sublist_index(abc_tokens_list, b_tokens)
         if b_index == -1:
-            print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
             continue
         c_index = find_sublist_index(abc_tokens_list, c_tokens)
         if c_index == -1:
-            print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
             continue
 
@@ -2206,6 +2221,7 @@ def create_IOI_tr_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_tr",
                       save_dir=save_dir, batch_size=8)
 
+
 def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
     """
     Generate IOI (Indirect Object Identification) hindi dataset in ABBA format.
@@ -2222,15 +2238,15 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     HINDI_NAMES = [
-        "अमित", "सुमित", "राहुल", "रोहित", "स्नेहा", 
-        "पूजा", "नेहा", "अंजलि", "विकास", "समीर", 
-        "रमेश", "सुरेश", "गीता", "सीता", "रवि", 
-        "राजू", "नितिन", "आदित्य", "रिया", "प्रिया", 
-        "दीपक", "करण", "अर्जुन", "मनोज", "संजय", 
-        "किरण", "सोनिया", "पवन", "गगन", "आकाश", 
-        "कमल", "विशाल", "अजय", "विजय", "सपना", 
-        "आरती", "मीना", "टीना", "सुनीता", "अनीता", 
-        "गौरव", "सौरभ", "आलोक", "वरुण", "तरुण", 
+        "अमित", "सुमित", "राहुल", "रोहित", "स्नेहा",
+        "पूजा", "नेहा", "अंजलि", "विकास", "समीर",
+        "रमेश", "सुरेश", "गीता", "सीता", "रवि",
+        "राजू", "नितिन", "आदित्य", "रिया", "प्रिया",
+        "दीपक", "करण", "अर्जुन", "मनोज", "संजय",
+        "किरण", "सोनिया", "पवन", "गगन", "आकाश",
+        "कमल", "विशाल", "अजय", "विजय", "सपना",
+        "आरती", "मीना", "टीना", "सुनीता", "अनीता",
+        "गौरव", "सौरभ", "आलोक", "वरुण", "तरुण",
         "मोनिका", "शिखा", "निशा", "आशा", "उषा"
     ]
 
@@ -2335,15 +2351,18 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         # s_tokens_ns = model.to_str_tokens(s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
-            print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(
+                f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
             print(f"Tokens list: {tokens_list}, IO token list: {io_tokens}")
             continue
         s1_index = find_sublist_index(tokens_list, s_tokens)
         if s1_index == -1:
-            print(f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
+            print(
+                f"S1 token '{s_token}' not found in tokens list for prompt: {baba_prompt}")
             print(f"Tokens list: {tokens_list}, S1 token list: {s_tokens}")
             continue
-        s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
+        s2_index = find_sublist_index(
+            tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -2367,20 +2386,23 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         a_tokens = model.to_str_tokens(" " + a_token)
         b_tokens = model.to_str_tokens(" " + b_token)
         c_tokens = model.to_str_tokens(" " + c_token)
-        
+
         a_index = find_sublist_index(abc_tokens_list, a_tokens)
         if a_index == -1:
-            print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
             continue
         b_index = find_sublist_index(abc_tokens_list, b_tokens)
         if b_index == -1:
-            print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
             continue
         c_index = find_sublist_index(abc_tokens_list, c_tokens)
         if c_index == -1:
-            print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
+            print(
+                f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
             print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
             continue
 
@@ -2775,13 +2797,16 @@ def eval_model_on_ioi(model_name: str, type_dataset: str, save_dir: str, batch_s
                     logits[index, row["length"]-1], dim=-1)
 
                 probs = torch.softmax(logits[index, row["length"]-1], dim=-1)
+                top_answer = model.to_string(outputs_token)
                 output_prob = probs[outputs_token].item()
-                correct_prob = probs[model.to_single_token(
+                # Handle case where the same token string is mapped to different token ids (happens for sub-unicode tokens, changes based on the context)
+                correct_prob = probs[outputs_token if row["correct_token"] == top_answer else model.to_single_token(
                     row["correct_token"])].item()
-                wrong_prob = probs[model.to_single_token(
+
+                wrong_prob = probs[outputs_token if row["wrong_token"] == top_answer else model.to_single_token(
                     row["wrong_token"])].item()
 
-                top_answer_list.append(model.to_string(outputs_token))
+                top_answer_list.append(top_answer)
                 top_answer_prob_list.append(round(output_prob, 4))
                 correct_prob_list.append(round(correct_prob, 4))
                 wrong_prob_list.append(round(wrong_prob, 4))
