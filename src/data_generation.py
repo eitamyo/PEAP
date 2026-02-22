@@ -1710,6 +1710,216 @@ def create_IOI_jp_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     eval_model_on_ioi(model_name, type_dataset="ABBA_jp",
                       save_dir=save_dir, batch_size=8)
 
+def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -> None:
+    """
+    Generate IOI (Indirect Object Identification) korean dataset in ABBA format.
+
+    This function creates a dataset of sentences following the Indirect Object Identification (IOI)
+    pattern in ABBA format, where names are arranged in an ABBA pattern (e.g., "Name2 Name1 Name1 Name2").
+    The task is to identify the correct referent in sentences with this structure.
+
+    Args:
+        model_name (str): Name of the model being evaluated
+
+    Returns:
+        None: Saves generated datasets as CSV files in data/{model_name}/ioi/{seed}/ directories
+    """
+
+    ABBA_TEMPLATES = [
+        # 1. [A] and [B] were talking at [PLACE]. [B] took out [OBJECT] and... (expected: to [A])
+        "[PLACE]에서 [A]와(과) [B]가 이야기를 나누고 있었습니다. [B]가 [OBJECT]을(를) 꺼내어 ",
+        
+        # 2. [A] and [B] arrived at [PLACE]. [B] held out the prepared [OBJECT] and...
+        "[PLACE]에 [A]와(과) [B]가 함께 도착했습니다. [B]는 미리 준비한 [OBJECT]을(를) 내밀며 ",
+        
+        # 3. [A] and [B] were studying at [PLACE]. Suddenly, [B] picked up [OBJECT] and...
+        "[PLACE]에서 [A]와(과) [B]가 공부를 하고 있었습니다. 갑자기 [B]가 [OBJECT]을(를) 집어 들고는 ",
+        
+        # 4. [A] and [B] took a walk in [PLACE]. [B] found [OBJECT] on the ground and...
+        "[A]와(과) [B]는 [PLACE]에서 산책을 했습니다. [B]가 바닥에서 [OBJECT]을(를) 주워서 ",
+        
+        # 5. [A] and [B] went shopping at [PLACE]. [B] bought a new [OBJECT] and...
+        "[PLACE]에서 [A]와(과) [B]가 쇼핑을 했습니다. [B]가 새로 산 [OBJECT]을(를) 포장해서 ",
+        
+        # 6. [A] and [B] were sitting at [PLACE]. [B] grabbed their favorite [OBJECT] and...
+        "[PLACE]에 [A]와(과) [B]가 앉아있었습니다. [B]는 자신이 아끼는 [OBJECT]을(를) 챙겨서 ",
+        
+        # 7. [A] and [B] were playing at [PLACE]. [B] discovered a pretty [OBJECT] and...
+        "[PLACE]에서 [A]와(과) [B]가 놀고 있었습니다. [B]가 예쁜 [OBJECT]을(를) 발견하고는 ",
+        
+        # 8. [A] and [B] finished their meal at [PLACE]. [B] took [OBJECT] from the bag and...
+        "[A]와(과) [B]가 [PLACE]에서 식사를 마쳤습니다. [B]가 가방에서 [OBJECT]을(를) 꺼내더니 ",
+        
+        # 9. [A] and [B] were playing a game at [PLACE]. As a penalty, [B] passed the [OBJECT] and...
+        "[PLACE]에서 [A]와(과) [B]가 게임을 했습니다. 벌칙으로 [B]가 [OBJECT]을(를) 건네며 ",
+        
+        # 10. [A] and [B] visited [PLACE]. [B] bought [OBJECT] as a souvenir and...
+        "[PLACE]에 [A]와(과) [B]가 방문했습니다. [B]는 기념품으로 산 [OBJECT]을(를) 조심스럽게 "
+    ]
+
+    KOREAN_NAMES = [
+        "민수", "지훈", "서준", "도윤", "예준", "시우", "하준", "주원", "지호", "지안",
+        "서연", "서윤", "지우", "서현", "민서", "하은", "다은", "지민", "은지", "수진",
+        "영호", "철수", "영희", "민지", "정훈", "상철", "동현", "승민", "재민", "성민",
+        "유진", "윤서", "수아", "예린", "소율", "지원", "하린", "채원", "가은", "현우",
+        "건우", "우진", "선우", "연우", "승우", "태윤", "정우", "현준", "민재", "진우"
+    ]
+
+    PLACES = [
+        "학교",      # School
+        "공원",      # Park
+        "도서관",    # Library
+        "카페",      # Cafe
+        "식당",      # Restaurant
+        "병원",      # Hospital
+        "영화관",    # Cinema
+        "놀이터",    # Playground
+        "백화점",    # Department store
+        "해변"       # Beach
+    ]
+
+    OBJECTS = [
+        "책",       # Book
+        "공",       # Ball
+        "선물",     # Gift
+        "연필",     # Pencil
+        "편지",     # Letter
+        "사과",     # Apple
+        "지갑",     # Wallet
+        "우산",     # Umbrella
+        "장난감",   # Toy
+        "열쇠"      # Key
+    ]
+
+    ABC_TEMPLATES = [
+        # Replace second [B] with [C]
+        template[:template.find('[B]', template.find('[B]') + 1)] + '[C]' +
+        template[template.find('[B]', template.find('[B]') + 1) + len('[B]'):]
+        for template in ABBA_TEMPLATES
+    ]
+
+    ABBA_FULL_TEMPLATES = []
+    ABC_FULL_TEMPLATES = []
+
+    for template in ABBA_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                ABBA_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+    for template in ABC_TEMPLATES:
+        for place in PLACES:
+            for obj in OBJECTS:
+                ABC_FULL_TEMPLATES.append(template.replace(
+                    "[PLACE]", place).replace("[OBJECT]", obj))
+
+    dtype = "bf16" if "Llama" else "float32"
+    model = HookedTransformer.from_pretrained(
+        model_name,
+        center_writing_weights=False,
+        center_unembed=False,
+        trust_remote_code=True,
+        # default_prepend_bos=True,
+        fold_ln=False,
+        device="cuda",
+        dtype=dtype
+    )
+
+    names_comb = [c for c in itertools.combinations(KOREAN_NAMES, 5)
+                  #   Require different start token for s1 and IO, and same length for clean and counterfactual
+                  if c[0][0] != c[1][0] and
+                  2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
+    dataset_size = 30000
+    print("comb:", len(names_comb))
+    random.seed(seed)
+    types = random.choices(["circuit", "eval", "ablation"], weights=[
+                           10, 10, 80], k=len(names_comb))
+    dataset_clean = defaultdict(list)
+    dataset_counter_abc = defaultdict(list)
+    names_comb_seed = random.sample(names_comb, dataset_size)
+    for i in tqdm(range(len(names_comb_seed))):
+        s_token, io_token, a_token, b_token, c_token = names_comb_seed[i]
+        template_index = random.randint(0, len(ABBA_FULL_TEMPLATES) - 1)
+        baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
+            "[A]", io_token).replace("[B]", s_token)
+        tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
+        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
+            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+        abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
+        if len(tokens_list) != len(abc_tokens_list):
+            continue
+
+        io_tokens = model.to_str_tokens(io_token)
+        s_tokens = model.to_str_tokens(s_token)
+        io_index = tokens_list.index(io_tokens[0])
+        s1_index = tokens_list.index(s_tokens[0])
+        s2_index = tokens_list[s1_index +
+                               1:].index(s_tokens[0]) + s1_index + 1
+        dataset_clean["prompt"].append(baba_prompt)
+        dataset_clean["prompt_id"].append(template_index)
+        dataset_clean["prefix"].append(1)
+        dataset_clean["IO"].append(io_index)
+        dataset_clean["connector"].append(io_index + len(io_tokens))
+        dataset_clean["S1"].append(s1_index)
+        dataset_clean["action1"].append(s1_index + len(s_tokens))
+        dataset_clean["S2"].append(s2_index)
+        dataset_clean["action2"].append(s2_index + len(s_tokens))
+        # Not really "to" in Japanese, but for consistency
+        dataset_clean["to"].append(len(tokens_list) - 1)
+        dataset_clean["length"].append(len(tokens_list))
+        dataset_clean["wrong_token"].append(s_tokens[0])
+        dataset_clean["correct_token"].append(io_tokens[0])
+        dataset_clean["S1_token"].append(s_tokens[0])
+        dataset_clean["S2_token"].append(s_tokens[0])
+        dataset_clean["IO_token"].append(io_tokens[0])
+        dataset_clean["label"].append(io_tokens[0])
+        dataset_clean["split"].append(types[i])
+
+        a_tokens = model.to_str_tokens(a_token)
+        b_tokens = model.to_str_tokens(b_token)
+        c_tokens = model.to_str_tokens(c_token)
+        a_index = abc_tokens_list.index(a_tokens[0])
+        b_index = abc_tokens_list.index(b_tokens[0])
+        c_index = abc_tokens_list.index(c_tokens[0])
+
+        dataset_counter_abc["prompt"].append(abc_prompt)
+        dataset_counter_abc["prompt_id"].append(template_index)
+        dataset_counter_abc["prefix"].append(1)
+        dataset_counter_abc["IO"].append(a_index)
+        dataset_counter_abc["connector"].append(a_index + len(a_tokens))
+        dataset_counter_abc["S1"].append(b_index)
+        dataset_counter_abc["action1"].append(b_index + len(b_tokens))
+        dataset_counter_abc["S2"].append(c_index)
+        dataset_counter_abc["action2"].append(c_index + len(c_tokens))
+        dataset_counter_abc["to"].append(len(tokens_list) - 1)
+        dataset_counter_abc["length"].append(len(tokens_list))
+        dataset_counter_abc["wrong_token"].append(s_tokens[0])
+        dataset_counter_abc["correct_token"].append(io_tokens[0])
+        dataset_counter_abc["S1_token"].append(s_tokens[0])
+        dataset_counter_abc["S2_token"].append(s_tokens[0])
+        dataset_counter_abc["IO_token"].append(io_tokens[0])
+        dataset_counter_abc["label"].append(io_tokens[0])
+        dataset_counter_abc["split"].append(types[i])
+
+    dataset_clean = pd.DataFrame.from_dict(dataset_clean)
+    print("data size:", dataset_clean.shape[0])
+    dataset_clean = dataset_clean.drop_duplicates()
+
+    dataset_counter_abc = pd.DataFrame.from_dict(dataset_counter_abc)
+    dataset_counter_abc = dataset_counter_abc[dataset_counter_abc.index.isin(
+        dataset_clean.index)]
+
+    dataset_clean = dataset_clean.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+    dataset_counter_abc = dataset_counter_abc.sample(
+        frac=1, random_state=seed).reset_index(drop=True)
+
+    dataset_clean.to_csv(os.path.join(save_dir, f'IOI_ABBA_ko_data_clean.csv'))
+    dataset_counter_abc.to_csv(os.path.join(
+        save_dir, f'IOI_ABBA_ko_data_counter_abc.csv'))
+
+    eval_model_on_ioi(model_name, type_dataset="ABBA_ko",
+                      save_dir=save_dir, batch_size=8)
+
 def find_sublist_index(main_list, sub_list):
     """Returns first index of sub_list of main_list. Otherwise, returns -1."""
     n = len(main_list)
