@@ -1864,7 +1864,7 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
                   #   Require different start token for s1 and IO, and same length for clean and counterfactual
                   if c[0][0] != c[1][0] and
                   2*len(c[0]) + len(c[1]) == len(c[2]) + len(c[3]) + len(c[4])]
-    dataset_size = 30000
+    dataset_size = 50000
     print("comb:", len(names_comb))
     random.seed(seed)
     types = random.choices(["circuit", "eval", "ablation"], weights=[
@@ -1900,6 +1900,30 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
             invalid_count += 1
             continue
         s2_index = find_sublist_index(tokens_list[s1_index + 1:], s_tokens) + s1_index + 1
+        
+        a_tokens = model.to_str_tokens(" " + a_token)
+        b_tokens = model.to_str_tokens(" " + b_token)
+        c_tokens = model.to_str_tokens(" " + c_token)
+        
+        a_index = find_sublist_index(abc_tokens_list, a_tokens)
+        if a_index == -1:
+            # print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
+            # print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
+            invalid_count += 1
+            continue
+        b_index = find_sublist_index(abc_tokens_list, b_tokens)
+        if b_index == -1:
+            # print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
+            # print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
+            invalid_count += 1
+            continue
+        c_index = find_sublist_index(abc_tokens_list, c_tokens)
+        if c_index == -1:
+            # print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
+            # print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
+            invalid_count += 1
+            continue
+        
         dataset_clean["prompt"].append(baba_prompt)
         dataset_clean["prompt_id"].append(template_index)
         dataset_clean["prefix"].append(1)
@@ -1925,29 +1949,6 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         # dataset_clean["IO_token"].append(io_tokens_ns[0])
         # dataset_clean["label"].append(io_tokens_ns[0])
         dataset_clean["split"].append(types[i])
-
-        a_tokens = model.to_str_tokens(" " + a_token)
-        b_tokens = model.to_str_tokens(" " + b_token)
-        c_tokens = model.to_str_tokens(" " + c_token)
-        
-        a_index = find_sublist_index(abc_tokens_list, a_tokens)
-        if a_index == -1:
-            # print(f"A token '{a_token}' not found in tokens list for prompt: {abc_prompt}")
-            # print(f"Tokens list: {abc_tokens_list}, A token list: {a_tokens}")
-            invalid_count += 1
-            continue
-        b_index = find_sublist_index(abc_tokens_list, b_tokens)
-        if b_index == -1:
-            # print(f"B token '{b_token}' not found in tokens list for prompt: {abc_prompt}")
-            # print(f"Tokens list: {abc_tokens_list}, B token list: {b_tokens}")
-            invalid_count += 1
-            continue
-        c_index = find_sublist_index(abc_tokens_list, c_tokens)
-        if c_index == -1:
-            # print(f"C token '{c_token}' not found in tokens list for prompt: {abc_prompt}")
-            # print(f"Tokens list: {abc_tokens_list}, C token list: {c_tokens}")
-            invalid_count += 1
-            continue
 
         dataset_counter_abc["prompt"].append(abc_prompt)
         dataset_counter_abc["prompt_id"].append(template_index)
