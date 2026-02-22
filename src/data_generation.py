@@ -1973,16 +1973,16 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     ]
 
     ABBA_TEMPLATES = [
-        "कल [A] और [B] [PLACE] गए थे। वहाँ [B] ने एक [OBJECT] भेंट किया",
-        "सुबह [A] और [B] [PLACE] पहुँचे। तब [B] ने एक [OBJECT] खरीदा",
-        "जब [A] और [B] [PLACE] में घूम रहे थे, तो [B] ने अपना [OBJECT] दे दिया",
-        "दोपहर को [A] और [B] [PLACE] में मिले। फिर [B] ने वह [OBJECT] दिखाया",
-        "जैसे ही [A] और [B] [PLACE] के अंदर गए, [B] ने चुपके से एक [OBJECT] थमा दिया",
-        "शाम को [A] और [B] [PLACE] से लौटे। रास्ते में [B] ने अपना [OBJECT] उधार दिया",
-        "छुट्टियों में [A] और [B] [PLACE] गए थे। वहाँ [B] ने एक [OBJECT] सौंपा",
-        "पिछली बार जब [A] और [B] [PLACE] में थे, तब [B] ने एक नया [OBJECT] पेश किया",
-        "जब [A] और [B] [PLACE] में खेल रहे थे, तब [B] ने वह [OBJECT] फेंका",
-        "आज [A] और [B] [PLACE] पर रुके। उसके बाद [B] ने वह [OBJECT] वापस कर दिया",
+        "कल [A] और [B] [PLACE] गए थे। वहाँ एक [OBJECT] खरीदने के बाद, [B] ने ",
+        "सुबह [A] और [B] [PLACE] पहुँचे। अपना [OBJECT] निकालने के तुरंत बाद, [B] ने ",
+        "जब [A] और [B] [PLACE] में घूम रहे थे, तब वह [OBJECT] उठाकर [B] ने ",
+        "दोपहर को [A] और [B] [PLACE] में मिले। अपना [OBJECT] ढूँढने के बाद, [B] ने ",
+        "जैसे ही [A] और [B] [PLACE] के अंदर गए, वह [OBJECT] चुपके से लेकर [B] ने ",
+        "शाम को [A] और [B] [PLACE] से लौटे। रास्ते में वह [OBJECT] निकालकर [B] ने सीधे ",
+        "छुट्टियों में [A] और [B] [PLACE] गए थे। वहाँ एक सुंदर [OBJECT] पैक करने के बाद, [B] ने ",
+        "पिछली बार जब [A] और [B] [PLACE] में थे, तब वह [OBJECT] झट से निकालकर [B] ने ",
+        "जब [A] और [B] [PLACE] में बात कर रहे थे, तब अपना [OBJECT] पकड़कर [B] ने ",
+        "आज [A] और [B] [PLACE] पर रुके। अपना पुराना [OBJECT] बाहर लाने के बाद, [B] ने "
     ]
 
     ABC_TEMPLATES = [
@@ -2042,8 +2042,8 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         if len(tokens_list) != len(abc_tokens_list):
             continue
 
-        io_tokens = model.to_str_tokens(" " + io_token)
-        s_tokens = model.to_str_tokens(" " + s_token)
+        io_tokens = model.to_str_tokens(io_token)
+        s_tokens = model.to_str_tokens(s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
             print(f"IO token '{io_token}' not found in tokens list for prompt: {baba_prompt}")
@@ -2075,9 +2075,9 @@ def create_IOI_hi_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
         dataset_clean["label"].append(io_tokens[0])
         dataset_clean["split"].append(types[i])
 
-        a_tokens = model.to_str_tokens(" " + a_token)
-        b_tokens = model.to_str_tokens(" " + b_token)
-        c_tokens = model.to_str_tokens(" " + c_token)
+        a_tokens = model.to_str_tokens(a_token)
+        b_tokens = model.to_str_tokens(b_token)
+        c_tokens = model.to_str_tokens(c_token)
         
         a_index = find_sublist_index(abc_tokens_list, a_tokens)
         if a_index == -1:
