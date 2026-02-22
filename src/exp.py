@@ -263,6 +263,13 @@ def logit_diff(logits: torch.Tensor, row: pd.DataFrame, model: HookedTransformer
     else:
         logit_correct = logits[-1, correct_token]
         logit_wrong = logits[-1, wrong_token]
+    
+    # Handle case where the same token string is mapped to different token ids (happens for sub-unicode tokens, changes based on the context)
+    if row["correct_token"] == row["top_answer"] and logit_correct < logit_wrong:
+        logit_correct = torch.max(logits[0, -1], dim=-1).values
+    if row["wrong_token"] == row["top_answer"] and logit_wrong < logit_correct:
+        logit_wrong = torch.max(logits[0, -1], dim=-1).values
+        
     diff = logit_correct - logit_wrong
     return diff
 
