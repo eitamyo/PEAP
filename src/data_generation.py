@@ -1726,36 +1726,72 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     """
 
     ABBA_TEMPLATES = [
-        # 1. [A] and [B] were talking at [PLACE]. [B] took out [OBJECT] and... (expected: to [A])
         "[PLACE]에서 [A]와(과) [B]가 이야기를 나누고 있었습니다. [B]가 [OBJECT]을(를) 꺼내어 ",
-        
-        # 2. [A] and [B] arrived at [PLACE]. [B] held out the prepared [OBJECT] and...
         "[PLACE]에 [A]와(과) [B]가 함께 도착했습니다. [B]는 미리 준비한 [OBJECT]을(를) 내밀며 ",
-        
-        # 3. [A] and [B] were studying at [PLACE]. Suddenly, [B] picked up [OBJECT] and...
         "[PLACE]에서 [A]와(과) [B]가 공부를 하고 있었습니다. 갑자기 [B]가 [OBJECT]을(를) 집어 들고는 ",
-        
-        # 4. [A] and [B] took a walk in [PLACE]. [B] found [OBJECT] on the ground and...
-        "[A]와(과) [B]는 [PLACE]에서 산책을 했습니다. [B]가 바닥에서 [OBJECT]을(를) 주워서 ",
-        
-        # 5. [A] and [B] went shopping at [PLACE]. [B] bought a new [OBJECT] and...
+        "어느 화창한 날, [PLACE]에서 [A]와(과) [B]가 산책을 했습니다. [B]가 바닥에서 [OBJECT]을(를) 주워서 ",
         "[PLACE]에서 [A]와(과) [B]가 쇼핑을 했습니다. [B]가 새로 산 [OBJECT]을(를) 포장해서 ",
-        
-        # 6. [A] and [B] were sitting at [PLACE]. [B] grabbed their favorite [OBJECT] and...
         "[PLACE]에 [A]와(과) [B]가 앉아있었습니다. [B]는 자신이 아끼는 [OBJECT]을(를) 챙겨서 ",
-        
-        # 7. [A] and [B] were playing at [PLACE]. [B] discovered a pretty [OBJECT] and...
         "[PLACE]에서 [A]와(과) [B]가 놀고 있었습니다. [B]가 예쁜 [OBJECT]을(를) 발견하고는 ",
-        
-        # 8. [A] and [B] finished their meal at [PLACE]. [B] took [OBJECT] from the bag and...
-        "[A]와(과) [B]가 [PLACE]에서 식사를 마쳤습니다. [B]가 가방에서 [OBJECT]을(를) 꺼내더니 ",
-        
-        # 9. [A] and [B] were playing a game at [PLACE]. As a penalty, [B] passed the [OBJECT] and...
+        "조용한 [PLACE]에서 [A]와(과) [B]가 식사를 마쳤습니다. [B]가 가방에서 [OBJECT]을(를) 꺼내더니 ",
         "[PLACE]에서 [A]와(과) [B]가 게임을 했습니다. 벌칙으로 [B]가 [OBJECT]을(를) 건네며 ",
-        
-        # 10. [A] and [B] visited [PLACE]. [B] bought [OBJECT] as a souvenir and...
         "[PLACE]에 [A]와(과) [B]가 방문했습니다. [B]는 기념품으로 산 [OBJECT]을(를) 조심스럽게 "
     ]
+    
+    def has_batchim(word):
+        """
+        Checks if the last character of a Korean word has a final consonant (batchim).
+        Korean unicode block starts at 0xAC00. Every 28th character has no batchim.
+        """
+        last_char = word[-1]
+        if '가' <= last_char <= '힣':
+            return (ord(last_char) - 0xAC00) % 28 > 0
+        return False
+    
+    def format_josa(text, placeholder, word, particle_vowel, particle_consonant):
+        """
+        Replaces the placeholder and its generic particle marker with the correct one.
+        Example: format_josa("...[A]와(과)...", "[A]", "민수", "와", "과")
+        """
+        target = f"{placeholder}{particle_vowel}({particle_consonant})"
+        if target not in text:
+            # Check reverse formatting just in case, e.g., 을(를) vs 를(을) - usually written as 을(를)
+            target = f"{placeholder}{particle_consonant}({particle_vowel})"
+            
+        correct_particle = particle_consonant if has_batchim(word) else particle_vowel
+        
+        # Also replace standard bare placeholders without particle markers attached in the template string
+        text = text.replace(target, f"{word}{correct_particle}")
+        text = text.replace(placeholder, word)
+        return text
+
+    def generate_full_template(template, place, obj):
+        result = template
+        
+        # # Process particles for [A]
+        # result = format_josa(result, "[A]", a, "와", "과")
+        
+        # # Process particles for [B] (Handles both 은/는 and 이/가)
+        # result = format_josa(result, "[B]", b, "는", "은")
+        # result = format_josa(result, "[B]", b, "가", "이")
+        
+        # Process particles for [OBJECT]
+        result = format_josa(result, "[OBJECT]", obj, "를", "을")
+        
+        # Replace [PLACE] (using standard replace since particles for places in templates are static like '에서' or '에')
+        result = result.replace("[PLACE]", place)
+        
+        return result
+    
+    def populate_template(template, a, b, c=None):
+        result = template
+        result = format_josa(result, "[A]", a, "와", "과")
+        result = format_josa(result, "[B]", b, "는", "은")
+        result = format_josa(result, "[B]", b, "가", "이")
+        if c:
+            result = format_josa(result, "[C]", c, "는", "은")
+            result = format_josa(result, "[C]", c, "가", "이")
+        return result
 
     KOREAN_NAMES = [
         "민수", "지훈", "서준", "도윤", "예준", "시우", "하준", "주원", "지호", "지안",
@@ -1804,13 +1840,11 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     for template in ABBA_TEMPLATES:
         for place in PLACES:
             for obj in OBJECTS:
-                ABBA_FULL_TEMPLATES.append(template.replace(
-                    "[PLACE]", place).replace("[OBJECT]", obj))
+                ABBA_FULL_TEMPLATES.append(generate_full_template(template, place, obj))
     for template in ABC_TEMPLATES:
         for place in PLACES:
             for obj in OBJECTS:
-                ABC_FULL_TEMPLATES.append(template.replace(
-                    "[PLACE]", place).replace("[OBJECT]", obj))
+                ABC_FULL_TEMPLATES.append(generate_full_template(template, place, obj))
 
     dtype = "bf16" if "Llama" else "float32"
     model = HookedTransformer.from_pretrained(
@@ -1839,18 +1873,16 @@ def create_IOI_ko_dataset_ABBA(model_name: str, save_dir: str, seed: int = 42) -
     for i in tqdm(range(len(names_comb_seed))):
         s_token, io_token, a_token, b_token, c_token = names_comb_seed[i]
         template_index = random.randint(0, len(ABBA_FULL_TEMPLATES) - 1)
-        baba_prompt = ABBA_FULL_TEMPLATES[template_index].replace(
-            "[A]", io_token).replace("[B]", s_token)
+        baba_prompt = populate_template(ABBA_FULL_TEMPLATES[template_index], io_token, s_token)
         tokens_list = model.to_str_tokens(baba_prompt, prepend_bos=True)
-        abc_prompt = ABC_FULL_TEMPLATES[template_index].replace(
-            "[A]", a_token).replace("[B]", b_token).replace("[C]", c_token)
+        abc_prompt = populate_template(ABC_FULL_TEMPLATES[template_index], a_token, b_token, c_token)
         abc_tokens_list = model.to_str_tokens(abc_prompt, prepend_bos=True)
         if len(tokens_list) != len(abc_tokens_list):
             continue
 
-        io_tokens = model.to_str_tokens(io_token)
+        io_tokens = model.to_str_tokens(" " + io_token)
         io_tokens_ns = model.to_str_tokens(io_token)
-        s_tokens = model.to_str_tokens(s_token)
+        s_tokens = model.to_str_tokens(" " + s_token)
         s_tokens_ns = model.to_str_tokens(s_token)
         io_index = find_sublist_index(tokens_list, io_tokens)
         if io_index == -1:
